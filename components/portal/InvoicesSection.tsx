@@ -3,10 +3,19 @@ import { FileText, CheckCircle, Clock } from "lucide-react";
 
 interface Invoice {
   id: string;
-  amount: number;
-  status: string;
+  client_id: string;
+  quotation_id: string | null;
+  invoice_number: string;
+  issue_date: string;
   due_date: string;
+  description: string;
+  total_amount: number;
+  amount_paid: number;
+  balance_due: number;
+  status: string;
+  created_by: string;
   created_at: string;
+  updated_at: string;
 }
 
 interface Props {
@@ -41,7 +50,7 @@ const InvoicesSection: React.FC<Props> = ({ invoices }) => {
               >
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-xl font-bold text-secondary-800">
-                    ${invoice.amount.toFixed(2)}
+                    ${invoice.total_amount.toFixed(2)}
                   </span>
                   <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
                     invoice.status === "paid"
