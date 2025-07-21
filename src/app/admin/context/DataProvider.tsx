@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { Client, Invoice, Receipt } from "../types";
+import { Client, Invoice, Receipt } from "../../types";
 
 interface DataContextType {
   clients: Client[];
