@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useData } from "../../context/DataProvider";
+import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 
 export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { invoices, clients, getReceiptsByInvoiceId, addReceipt } = useData();
+  const supabase = createClient();
 
   const invoiceId = params.id as string;
-  const invoice = invoices.find((inv) => inv.id === invoiceId);
-  const client = invoice
-    ? clients.find((c) => c.id === invoice.clientId)
-    : null;
-  const receipts = getReceiptsByInvoiceId(invoiceId);
+  const [invoice, setInvoice] = useState<any>(null);
+  const [client, setClient] = useState<any>(null);
+  const [receipts, setReceipts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
@@ -27,7 +27,74 @@ export default function InvoiceDetailPage() {
   );
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
 
-  if (!invoice || !client) {
+  // Fetch invoice, client, and receipts data
+  useEffect(() => {
+    const fetchInvoiceData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Fetch invoice with client information
+        const { data: invoiceData, error: invoiceError } = await supabase
+          .from("invoices")
+          .select(
+            `
+            *,
+            clients (
+              id,
+              name,
+              contact_email,
+              contact_phone,
+              address
+            )
+          `
+          )
+          .eq("id", invoiceId)
+          .single();
+
+        if (invoiceError) {
+          setError("Invoice not found");
+          setLoading(false);
+          return;
+        }
+
+        setInvoice(invoiceData);
+        setClient(invoiceData.clients);
+
+        // Fetch receipts for this invoice
+        const { data: receiptsData, error: receiptsError } = await supabase
+          .from("receipts")
+          .select("*")
+          .eq("invoice_id", invoiceId)
+          .order("payment_date", { ascending: false });
+
+        if (!receiptsError) {
+          setReceipts(receiptsData || []);
+        }
+      } catch (err) {
+        setError("Failed to load invoice data");
+      }
+
+      setLoading(false);
+    };
+
+    if (invoiceId) {
+      fetchInvoiceData();
+    }
+  }, [invoiceId, supabase]);
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading invoice details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !invoice || !client) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="text-center py-12">
@@ -53,8 +120,8 @@ export default function InvoiceDetailPage() {
 
     if (!paymentForm.amount || parseFloat(paymentForm.amount) <= 0) {
       newErrors.amount = "Please enter a valid amount greater than 0";
-    } else if (parseFloat(paymentForm.amount) > invoice.balanceDue) {
-      newErrors.amount = `Amount cannot exceed balance due ($${invoice.balanceDue.toFixed(
+    } else if (parseFloat(paymentForm.amount) > invoice.balance_due) {
+      newErrors.amount = `Amount cannot exceed balance due ($${invoice.balance_due.toFixed(
         2
       )})`;
     }
@@ -71,7 +138,7 @@ export default function InvoiceDetailPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handlePaymentSubmit = (e: React.FormEvent) => {
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validatePaymentForm()) {
@@ -81,24 +148,97 @@ export default function InvoiceDetailPage() {
     setIsSubmittingPayment(true);
 
     try {
-      addReceipt({
-        clientId: invoice.clientId,
-        invoiceId: invoice.id,
-        paymentDate: paymentForm.paymentDate,
-        amount: parseFloat(paymentForm.amount),
-        paymentMethod: paymentForm.paymentMethod,
-      });
+      // Generate receipt number
+      const { data: lastReceipt, error: receiptError } = await supabase
+        .from("receipts")
+        .select("receipt_number")
+        .order("receipt_number", { ascending: false })
+        .limit(1)
+        .single();
 
-      // Reset form
-      setPaymentForm({
-        amount: "",
-        paymentDate: new Date().toISOString().split("T")[0],
-        paymentMethod: "Bank Transfer",
-      });
-      setPaymentErrors({});
-      setIsSubmittingPayment(false);
+      let receiptNumber = "REC-001";
+      if (!receiptError && lastReceipt) {
+        const match = lastReceipt.receipt_number.match(/REC-(\d+)/);
+        if (match) {
+          const lastNumber = parseInt(match[1], 10);
+          const nextNumber = lastNumber + 1;
+          receiptNumber = `REC-${nextNumber.toString().padStart(3, "0")}`;
+        }
+      }
+
+      // Create receipt
+      const { error: createReceiptError } = await supabase
+        .from("receipts")
+        .insert({
+          client_id: invoice.client_id,
+          invoice_id: invoice.id,
+          receipt_number: receiptNumber,
+          payment_date: paymentForm.paymentDate,
+          amount: parseFloat(paymentForm.amount),
+          payment_method: paymentForm.paymentMethod,
+        });
+
+      if (createReceiptError) {
+        throw new Error(
+          `Failed to create receipt: ${createReceiptError.message}`
+        );
+      }
+
+      // Update invoice
+      const newAmountPaid =
+        invoice.amount_paid + parseFloat(paymentForm.amount);
+      const newBalanceDue = invoice.total_amount - newAmountPaid;
+      const newStatus = newBalanceDue === 0 ? "paid" : "partially_paid";
+
+      const { error: updateInvoiceError } = await supabase
+        .from("invoices")
+        .update({
+          amount_paid: newAmountPaid,
+          balance_due: newBalanceDue,
+          status: newStatus,
+        })
+        .eq("id", invoice.id);
+
+      if (updateInvoiceError) {
+        throw new Error(
+          `Failed to update invoice: ${updateInvoiceError.message}`
+        );
+      }
+
+      // Update client balance
+      const { data: currentClient, error: fetchClientError } = await supabase
+        .from("clients")
+        .select("paid_amount, regular_balance")
+        .eq("id", invoice.client_id)
+        .single();
+
+      if (!fetchClientError && currentClient) {
+        const newPaidAmount =
+          (currentClient.paid_amount || 0) + parseFloat(paymentForm.amount);
+        const newRegularBalance =
+          (currentClient.regular_balance || 0) - parseFloat(paymentForm.amount);
+
+        const { error: updateClientError } = await supabase
+          .from("clients")
+          .update({
+            paid_amount: newPaidAmount,
+            regular_balance: newRegularBalance,
+          })
+          .eq("id", invoice.client_id);
+
+        if (updateClientError) {
+          console.error("Failed to update client balance:", updateClientError);
+          // Don't fail the entire operation if balance update fails
+        }
+      }
+
+      // Refresh data
+      window.location.reload();
     } catch (error) {
       console.error("Error adding payment:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to add payment"
+      );
       setIsSubmittingPayment(false);
     }
   };
@@ -129,7 +269,7 @@ export default function InvoiceDetailPage() {
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              {invoice.invoiceNumber}
+              {invoice.invoice_number}
             </h1>
             <p className="text-gray-600 mt-2">
               Invoice Details & Payment Management
@@ -158,7 +298,7 @@ export default function InvoiceDetailPage() {
                 Invoice Number
               </label>
               <p className="text-sm text-gray-900 mt-1">
-                {invoice.invoiceNumber}
+                {invoice.invoice_number}
               </p>
             </div>
             <div>
@@ -172,7 +312,7 @@ export default function InvoiceDetailPage() {
                 Issue Date
               </label>
               <p className="text-sm text-gray-900 mt-1">
-                {new Date(invoice.issueDate).toLocaleDateString()}
+                {new Date(invoice.issue_date).toLocaleDateString()}
               </p>
             </div>
             <div>
@@ -180,7 +320,7 @@ export default function InvoiceDetailPage() {
                 Due Date
               </label>
               <p className="text-sm text-gray-900 mt-1">
-                {new Date(invoice.dueDate).toLocaleDateString()}
+                {new Date(invoice.due_date).toLocaleDateString()}
               </p>
             </div>
             <div className="md:col-span-2">
@@ -204,7 +344,7 @@ export default function InvoiceDetailPage() {
                 Total Amount
               </label>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                ${invoice.totalAmount.toFixed(2)}
+                ${invoice.total_amount?.toFixed(2) || "0.00"}
               </p>
             </div>
             <div>
@@ -212,7 +352,7 @@ export default function InvoiceDetailPage() {
                 Amount Paid
               </label>
               <p className="text-2xl font-bold text-green-600 mt-1">
-                ${invoice.amountPaid.toFixed(2)}
+                ${invoice.amount_paid?.toFixed(2) || "0.00"}
               </p>
             </div>
             <div>
@@ -221,10 +361,10 @@ export default function InvoiceDetailPage() {
               </label>
               <p
                 className={`text-2xl font-bold mt-1 ${
-                  invoice.balanceDue > 0 ? "text-red-600" : "text-green-600"
+                  invoice.balance_due > 0 ? "text-red-600" : "text-green-600"
                 }`}
               >
-                ${invoice.balanceDue.toFixed(2)}
+                ${invoice.balance_due?.toFixed(2) || "0.00"}
               </p>
             </div>
             <div>
@@ -248,12 +388,17 @@ export default function InvoiceDetailPage() {
       </div>
 
       {/* Add Payment Section */}
-      {invoice.balanceDue > 0 && (
+      {invoice.balance_due > 0 && (
         <div className="bg-white rounded-lg shadow-md border mb-8" id="payment">
           <div className="p-6 border-b">
             <h2 className="text-xl font-semibold text-gray-900">Add Payment</h2>
           </div>
           <div className="p-6">
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600">{error}</p>
+              </div>
+            )}
             <form onSubmit={handlePaymentSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
@@ -275,7 +420,7 @@ export default function InvoiceDetailPage() {
                       onChange={handlePaymentChange}
                       step="0.01"
                       min="0"
-                      max={invoice.balanceDue}
+                      max={invoice.balance_due}
                       className={`w-full pl-8 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                         paymentErrors.amount
                           ? "border-red-300"
@@ -290,7 +435,7 @@ export default function InvoiceDetailPage() {
                     </p>
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    Maximum: ${invoice.balanceDue.toFixed(2)}
+                    Maximum: ${invoice.balance_due.toFixed(2)}
                   </p>
                 </div>
 
@@ -398,16 +543,16 @@ export default function InvoiceDetailPage() {
                 {receipts.map((receipt) => (
                   <tr key={receipt.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {receipt.receiptNumber}
+                      {receipt.receipt_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(receipt.paymentDate).toLocaleDateString()}
+                      {new Date(receipt.payment_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
                       ${receipt.amount.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {receipt.paymentMethod}
+                      {receipt.payment_method}
                     </td>
                   </tr>
                 ))}
