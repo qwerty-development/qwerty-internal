@@ -38,7 +38,7 @@ export default function InvoiceDetailPage() {
             The invoice you're looking for doesn't exist.
           </p>
           <Link
-            href="/invoices"
+            href="/admin/invoices"
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Back to Invoices
@@ -120,7 +120,7 @@ export default function InvoiceDetailPage() {
       <div className="mb-8">
         <div className="flex items-center mb-4">
           <Link
-            href="/invoices"
+            href="/admin/invoices"
             className="text-blue-600 hover:text-blue-800 mr-4"
           >
             ← Back to Invoices

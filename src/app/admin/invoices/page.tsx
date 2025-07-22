@@ -21,7 +21,7 @@ export default function InvoiceListPage() {
           </p>
         </div>
         <Link
-          href="/invoices/new"
+          href="/admin/invoices/new"
           className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
         >
           Create New Invoice
@@ -102,14 +102,14 @@ export default function InvoiceListPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <Link
-                        href={`/invoices/${invoice.id}`}
+                        href={`/admin/invoices/${invoice.id}`}
                         className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors"
                       >
                         View Details
                       </Link>
                       {invoice.balanceDue > 0 && (
                         <Link
-                          href={`/invoices/${invoice.id}#payment`}
+                          href={`/admin/invoices/${invoice.id}#payment`}
                           className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition-colors"
                         >
                           Add Payment
@@ -147,7 +147,7 @@ export default function InvoiceListPage() {
               Get started by creating your first invoice.
             </p>
             <Link
-              href="/invoices/new"
+              href="/admin/invoices/new"
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               Create New Invoice
