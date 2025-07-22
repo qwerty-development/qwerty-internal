@@ -26,7 +26,7 @@ export default function ClientDetailPage() {
             The client you're looking for doesn't exist.
           </p>
           <Link
-            href="/clients"
+            href="/admin/clients"
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Back to Clients
@@ -41,7 +41,7 @@ export default function ClientDetailPage() {
       <div className="mb-8">
         <div className="flex items-center mb-4">
           <Link
-            href="/clients"
+            href="/admin/clients"
             className="text-blue-600 hover:text-blue-800 mr-4"
           >
             ← Back to Clients
@@ -55,7 +55,7 @@ export default function ClientDetailPage() {
             </p>
           </div>
           <Link
-            href={`/clients/${client.id}/edit`}
+            href={`/admin/clients/${client.id}/edit`}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Edit Client

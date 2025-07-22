@@ -137,7 +137,7 @@ export default function InvoiceDetailPage() {
           </div>
           <div className="flex space-x-3">
             <Link
-              href={`/clients/${client.id}`}
+              href={`/admin/clients/${client.id}`}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               View Client

@@ -44,7 +44,7 @@ export default function EditClientPage() {
             The client you're looking for doesn't exist.
           </p>
           <Link
-            href="/clients"
+            href="/admin/clients"
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Back to Clients
@@ -86,7 +86,7 @@ export default function EditClientPage() {
         email: formData.email.trim() || undefined,
       });
 
-      router.push(`/clients/${clientId}`);
+      router.push(`/admin/clients/${clientId}`);
     } catch (error) {
       console.error("Error updating client:", error);
       setIsSubmitting(false);
@@ -110,7 +110,7 @@ export default function EditClientPage() {
       <div className="mb-8">
         <div className="flex items-center mb-4">
           <Link
-            href={`/clients/${clientId}`}
+            href={`/admin/clients/${clientId}`}
             className="text-blue-600 hover:text-blue-800 mr-4"
           >
             ← Back to Client Details
@@ -206,7 +206,7 @@ export default function EditClientPage() {
 
           <div className="flex justify-end space-x-4 pt-6 border-t">
             <Link
-              href={`/clients/${clientId}`}
+              href={`/admin/clients/${clientId}`}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Cancel
