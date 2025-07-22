@@ -2,38 +2,139 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useData } from "../../../context/DataProvider";
+import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 
 export default function EditClientPage() {
   const params = useParams();
   const router = useRouter();
-  const { getClientById, updateClient } = useData();
+  const supabase = createClient();
 
   const clientId = params.id as string;
-  const client = getClientById(clientId);
+  const [client, setClient] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
-    phone: "",
+    contact_phone: "",
     address: "",
-    email: "",
+    contact_email: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (client) {
-      setFormData({
-        name: client.name,
-        phone: client.phone || "",
-        address: client.address || "",
-        email: client.email || "",
-      });
-    }
-  }, [client]);
+    const fetchClient = async () => {
+      setLoading(true);
+      setError(null);
 
-  if (!client) {
+      try {
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("id", clientId)
+          .single();
+
+        if (clientError) {
+          setError("Client not found");
+          setLoading(false);
+          return;
+        }
+
+        setClient(clientData);
+        setFormData({
+          name: clientData.name || "",
+          contact_phone: clientData.contact_phone || "",
+          address: clientData.address || "",
+          contact_email: clientData.contact_email || "",
+        });
+      } catch (err) {
+        setError("Failed to load client data");
+      }
+
+      setLoading(false);
+    };
+
+    if (clientId) {
+      fetchClient();
+    }
+  }, [clientId, supabase]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    if (
+      formData.contact_email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)
+    ) {
+      newErrors.contact_email = "Please enter a valid email address";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error: updateError } = await supabase
+        .from("clients")
+        .update({
+          name: formData.name.trim(),
+          contact_phone: formData.contact_phone.trim() || null,
+          address: formData.address.trim() || null,
+          contact_email: formData.contact_email.trim() || null,
+        })
+        .eq("id", clientId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      router.push(`/admin/clients/${clientId}`);
+    } catch (error) {
+      console.error("Error updating client:", error);
+      setError("Failed to update client");
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading client details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !client) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="text-center py-12">
@@ -53,57 +154,6 @@ export default function EditClientPage() {
       </div>
     );
   }
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    }
-
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      updateClient(clientId, {
-        name: formData.name.trim(),
-        phone: formData.phone.trim() || undefined,
-        address: formData.address.trim() || undefined,
-        email: formData.email.trim() || undefined,
-      });
-
-      router.push(`/admin/clients/${clientId}`);
-    } catch (error) {
-      console.error("Error updating client:", error);
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -147,16 +197,16 @@ export default function EditClientPage() {
 
           <div>
             <label
-              htmlFor="phone"
+              htmlFor="contact_phone"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
               Phone Number
             </label>
             <input
               type="tel"
-              id="phone"
-              name="phone"
-              value={formData.phone}
+              id="contact_phone"
+              name="contact_phone"
+              value={formData.contact_phone}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter phone number"
@@ -165,24 +215,26 @@ export default function EditClientPage() {
 
           <div>
             <label
-              htmlFor="email"
+              htmlFor="contact_email"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
               Email Address
             </label>
             <input
               type="email"
-              id="email"
-              name="email"
-              value={formData.email}
+              id="contact_email"
+              name="contact_email"
+              value={formData.contact_email}
               onChange={handleChange}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.email ? "border-red-300" : "border-gray-300"
+                errors.contact_email ? "border-red-300" : "border-gray-300"
               }`}
               placeholder="Enter email address"
             />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+            {errors.contact_email && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.contact_email}
+              </p>
             )}
           </div>
 

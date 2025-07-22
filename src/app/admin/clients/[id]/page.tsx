@@ -1,21 +1,86 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useData } from "../../context/DataProvider";
+import { useState, useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { getClientById, getInvoicesByClientId, getReceiptsByClientId } =
-    useData();
+  const supabase = createClient();
 
   const clientId = params.id as string;
-  const client = getClientById(clientId);
-  const clientInvoices = getInvoicesByClientId(clientId);
-  const clientReceipts = getReceiptsByClientId(clientId);
+  const [client, setClient] = useState<any>(null);
+  const [clientInvoices, setClientInvoices] = useState<any[]>([]);
+  const [clientReceipts, setClientReceipts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!client) {
+  useEffect(() => {
+    const fetchClientData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Fetch client details
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("id", clientId)
+          .single();
+
+        if (clientError) {
+          setError("Client not found");
+          setLoading(false);
+          return;
+        }
+
+        setClient(clientData);
+
+        // Fetch client invoices
+        const { data: invoicesData, error: invoicesError } = await supabase
+          .from("invoices")
+          .select("*")
+          .eq("client_id", clientId);
+
+        if (!invoicesError) {
+          setClientInvoices(invoicesData || []);
+        }
+
+        // Fetch client receipts
+        const { data: receiptsData, error: receiptsError } = await supabase
+          .from("receipts")
+          .select("*")
+          .eq("client_id", clientId);
+
+        if (!receiptsError) {
+          setClientReceipts(receiptsData || []);
+        }
+      } catch (err) {
+        setError("Failed to load client data");
+      }
+
+      setLoading(false);
+    };
+
+    if (clientId) {
+      fetchClientData();
+    }
+  }, [clientId, supabase]);
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading client details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !client) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="text-center py-12">
@@ -81,7 +146,7 @@ export default function ClientDetailPage() {
                 Phone
               </label>
               <p className="text-sm text-gray-900 mt-1">
-                {client.phone || "Not provided"}
+                {client.contact_phone || "Not provided"}
               </p>
             </div>
             <div>
@@ -89,7 +154,7 @@ export default function ClientDetailPage() {
                 Email
               </label>
               <p className="text-sm text-gray-900 mt-1">
-                {client.email || "Not provided"}
+                {client.contact_email || "Not provided"}
               </p>
             </div>
             <div>
@@ -114,10 +179,10 @@ export default function ClientDetailPage() {
               </label>
               <p
                 className={`text-2xl font-bold mt-1 ${
-                  client.regularBalance > 0 ? "text-red-600" : "text-green-600"
+                  client.regular_balance > 0 ? "text-red-600" : "text-green-600"
                 }`}
               >
-                ${client.regularBalance.toFixed(2)}
+                ${client.regular_balance?.toFixed(2) || "0.00"}
               </p>
             </div>
             <div>
@@ -125,7 +190,7 @@ export default function ClientDetailPage() {
                 Total Paid
               </label>
               <p className="text-2xl font-bold text-green-600 mt-1">
-                ${client.paidAmount.toFixed(2)}
+                ${client.paid_amount?.toFixed(2) || "0.00"}
               </p>
             </div>
             <div>
@@ -156,7 +221,7 @@ export default function ClientDetailPage() {
               Invoices for this Client
             </h2>
             <Link
-              href="/invoices/new"
+              href="/admin/invoices/new"
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
             >
               Create Invoice
@@ -199,22 +264,22 @@ export default function ClientDetailPage() {
                 {clientInvoices.map((invoice) => (
                   <tr key={invoice.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {invoice.invoiceNumber}
+                      {invoice.invoice_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(invoice.issueDate).toLocaleDateString()}
+                      {new Date(invoice.issue_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(invoice.dueDate).toLocaleDateString()}
+                      {new Date(invoice.due_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${invoice.totalAmount.toFixed(2)}
+                      ${invoice.total_amount?.toFixed(2) || "0.00"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                      ${invoice.amountPaid.toFixed(2)}
+                      ${invoice.amount_paid?.toFixed(2) || "0.00"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${invoice.balanceDue.toFixed(2)}
+                      ${invoice.balance_due?.toFixed(2) || "0.00"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
@@ -226,12 +291,12 @@ export default function ClientDetailPage() {
                             : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {invoice.status}
+                        {invoice.status || "Unpaid"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
-                        href={`/invoices/${invoice.id}`}
+                        href={`/admin/invoices/${invoice.id}`}
                         className="text-blue-600 hover:text-blue-900"
                       >
                         View
@@ -248,7 +313,7 @@ export default function ClientDetailPage() {
               No invoices found for this client.
             </p>
             <Link
-              href="/invoices/new"
+              href="/admin/invoices/new"
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               Create First Invoice
@@ -291,21 +356,21 @@ export default function ClientDetailPage() {
                 {clientReceipts.map((receipt) => (
                   <tr key={receipt.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {receipt.receiptNumber}
+                      {receipt.receipt_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(receipt.paymentDate).toLocaleDateString()}
+                      {new Date(receipt.payment_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                      ${receipt.amount.toFixed(2)}
+                      ${receipt.amount?.toFixed(2) || "0.00"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {receipt.paymentMethod}
+                      {receipt.payment_method || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {clientInvoices.find(
-                        (inv) => inv.id === receipt.invoiceId
-                      )?.invoiceNumber || "N/A"}
+                        (inv) => inv.id === receipt.invoice_id
+                      )?.invoice_number || "N/A"}
                     </td>
                   </tr>
                 ))}
