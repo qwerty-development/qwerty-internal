@@ -55,7 +55,7 @@ export default function ClientListPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
           <p className="text-gray-600 mt-2">
-            Manage your client relationships and financial data
+            Manage your client relationships and financial data{" "}
             {!loading && (
               <span className="ml-2 text-blue-600 font-medium">
                 ({clients.length} {clients.length === 1 ? "client" : "clients"})
