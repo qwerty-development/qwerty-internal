@@ -3,30 +3,50 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
-import { Users, Plus } from "lucide-react";
+import { Users, Plus, RefreshCw } from "lucide-react";
 
 export default function ClientListPage() {
   const supabase = createClient();
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchClients = async () => {
-      setLoading(true);
-      setError(null);
-      const { data, error } = await supabase
-        .from("clients")
-        .select("id, name, contact_email, contact_phone, address, regular_balance, paid_amount, notes");
-      if (error) {
-        setError(error.message);
-        setClients([]);
-      } else {
-        setClients(data || []);
-      }
-      setLoading(false);
-    };
+  // Function to fetch clients
+  const fetchClients = async () => {
+    setRefreshing(true);
+    setError(null);
+    const { data, error } = await supabase
+      .from("clients")
+      .select(
+        "id, name, contact_email, contact_phone, address, regular_balance, paid_amount, notes"
+      );
+    if (error) {
+      setError(error.message);
+      setClients([]);
+    } else {
+      setClients(data || []);
+    }
+    setLoading(false);
+    setRefreshing(false);
+  };
+
+  // Function to handle manual refresh
+  const handleRefresh = () => {
     fetchClients();
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  // Auto-refresh clients every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchClients();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -36,15 +56,32 @@ export default function ClientListPage() {
           <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
           <p className="text-gray-600 mt-2">
             Manage your client relationships and financial data
+            {!loading && (
+              <span className="ml-2 text-blue-600 font-medium">
+                ({clients.length} {clients.length === 1 ? "client" : "clients"})
+              </span>
+            )}
           </p>
         </div>
-        <Link
-          href="/admin/clients/new"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create New Client
-        </Link>
+        <div className="flex space-x-3">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="inline-flex items-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+            />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+          <Link
+            href="/admin/clients/new"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create New Client
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md border overflow-hidden">
@@ -129,7 +166,7 @@ export default function ClientListPage() {
           </table>
         </div>
 
-        {(!loading && clients.length === 0) && (
+        {!loading && clients.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-500 mb-4">
               <Users className="mx-auto h-12 w-12" />
@@ -150,11 +187,11 @@ export default function ClientListPage() {
           </div>
         )}
         {loading && (
-          <div className="text-center py-12 text-gray-500">Loading clients...</div>
+          <div className="text-center py-12 text-gray-500">
+            Loading clients...
+          </div>
         )}
-        {error && (
-          <div className="text-center py-12 text-red-500">{error}</div>
-        )}
+        {error && <div className="text-center py-12 text-red-500">{error}</div>}
       </div>
     </div>
   );

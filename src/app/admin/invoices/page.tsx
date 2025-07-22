@@ -3,47 +3,65 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
+import { RefreshCw } from "lucide-react";
 
 export default function InvoiceListPage() {
   const supabase = createClient();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+  // Function to fetch invoice data
+  const fetchData = async () => {
+    setRefreshing(true);
+    setError(null);
 
-      try {
-        // Fetch invoices with client information
-        const { data: invoicesData, error: invoicesError } = await supabase
-          .from("invoices")
-          .select(
-            `
-            *,
-            clients (
-              id,
-              name
-            )
+    try {
+      // Fetch invoices with client information
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from("invoices")
+        .select(
           `
+          *,
+          clients (
+            id,
+            name
           )
-          .order("created_at", { ascending: false });
+        `
+        )
+        .order("created_at", { ascending: false });
 
-        if (invoicesError) {
-          setError(invoicesError.message);
-        } else {
-          setInvoices(invoicesData || []);
-        }
-      } catch (err) {
-        setError("Failed to load invoices");
-      } finally {
-        setLoading(false);
+      if (invoicesError) {
+        setError(invoicesError.message);
+      } else {
+        setInvoices(invoicesData || []);
       }
-    };
+    } catch (err) {
+      setError("Failed to load invoices");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
+  // Function to handle manual refresh
+  const handleRefresh = () => {
     fetchData();
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [supabase]);
+
+  // Auto-refresh invoices every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
   }, [supabase]);
 
   const getClientName = (clientId: string) => {
@@ -88,14 +106,32 @@ export default function InvoiceListPage() {
           <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
           <p className="text-gray-600 mt-2">
             Manage your invoices and payment tracking
+            {!loading && (
+              <span className="ml-2 text-blue-600 font-medium">
+                ({invoices.length}{" "}
+                {invoices.length === 1 ? "invoice" : "invoices"})
+              </span>
+            )}
           </p>
         </div>
-        <Link
-          href="/admin/invoices/new"
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-        >
-          Create New Invoice
-        </Link>
+        <div className="flex space-x-3">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="inline-flex items-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+            />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+          <Link
+            href="/admin/invoices/new"
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            Create New Invoice
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md border overflow-hidden">
@@ -253,9 +289,13 @@ export default function InvoiceListPage() {
               <p className="text-sm font-medium text-gray-600">
                 Total Invoices
               </p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {invoices.length}
-              </p>
+              {loading ? (
+                <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
+              ) : (
+                <p className="text-2xl font-semibold text-gray-900">
+                  {invoices.length}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -279,9 +319,13 @@ export default function InvoiceListPage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Paid Invoices</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {invoices.filter((inv) => inv.status === "Paid").length}
-              </p>
+              {loading ? (
+                <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
+              ) : (
+                <p className="text-2xl font-semibold text-gray-900">
+                  {invoices.filter((inv) => inv.status === "paid").length}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -305,12 +349,16 @@ export default function InvoiceListPage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Outstanding</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                $
-                {invoices
-                  .reduce((sum, inv) => sum + inv.balanceDue, 0)
-                  .toFixed(2)}
-              </p>
+              {loading ? (
+                <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
+              ) : (
+                <p className="text-2xl font-semibold text-gray-900">
+                  $
+                  {invoices
+                    .reduce((sum, inv) => sum + (inv.balance_due || 0), 0)
+                    .toFixed(2)}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -336,12 +384,16 @@ export default function InvoiceListPage() {
               <p className="text-sm font-medium text-gray-600">
                 Total Collected
               </p>
-              <p className="text-2xl font-semibold text-gray-900">
-                $
-                {invoices
-                  .reduce((sum, inv) => sum + inv.amountPaid, 0)
-                  .toFixed(2)}
-              </p>
+              {loading ? (
+                <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
+              ) : (
+                <p className="text-2xl font-semibold text-gray-900">
+                  $
+                  {invoices
+                    .reduce((sum, inv) => sum + (inv.amount_paid || 0), 0)
+                    .toFixed(2)}
+                </p>
+              )}
             </div>
           </div>
         </div>
