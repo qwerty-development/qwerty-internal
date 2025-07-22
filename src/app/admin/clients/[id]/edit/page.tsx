@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { updateClientUser } from "@/utils/clientUpdate";
 import Link from "next/link";
 
 export default function EditClientPage() {
@@ -89,18 +90,18 @@ export default function EditClientPage() {
     setIsSubmitting(true);
 
     try {
-      const { error: updateError } = await supabase
-        .from("clients")
-        .update({
-          name: formData.name.trim(),
-          contact_phone: formData.contact_phone.trim() || null,
-          address: formData.address.trim() || null,
-          contact_email: formData.contact_email.trim() || null,
-        })
-        .eq("id", clientId);
+      const result = await updateClientUser(clientId, {
+        name: formData.name.trim(),
+        contact_phone: formData.contact_phone.trim() || undefined,
+        address: formData.address.trim() || undefined,
+        contact_email: formData.contact_email.trim() || undefined,
+      });
 
-      if (updateError) {
-        throw updateError;
+      if (result.success) {
+        router.push(`/admin/clients/${clientId}`);
+      } else {
+        setError(result.error || "Failed to update client");
+        setIsSubmitting(false);
       }
 
       router.push(`/admin/clients/${clientId}`);
