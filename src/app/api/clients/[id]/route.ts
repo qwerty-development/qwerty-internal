@@ -25,10 +25,11 @@ interface ClientUpdateData {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: Promise<{ params: { id: string } }>
 ) {
   try {
-    const clientId = params.id;
+    const { params: resolvedParams } = await params;
+    const clientId = resolvedParams.id;
     const updateData: ClientUpdateData = await request.json();
     const supabase = createServiceClient();
 
