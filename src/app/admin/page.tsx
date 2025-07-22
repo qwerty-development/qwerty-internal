@@ -1,6 +1,5 @@
 "use client";
 
-import { useData } from "./context/DataProvider";
 import {
   User,
   FileText,
@@ -10,7 +9,8 @@ import {
   Plus,
   Users,
   Zap,
-  BarChart3
+  BarChart3,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,16 +18,32 @@ import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function HomePage() {
-  const { clients, invoices, receipts } = useData();
   const router = useRouter();
   const supabase = createClient();
   const [user, setUser] = useState<any>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Dashboard statistics state
+  const [stats, setStats] = useState({
+    totalClients: 0,
+    totalInvoices: 0,
+    totalOutstanding: 0,
+    totalCollected: 0,
+    totalReceipts: 0,
+    fullyPaidInvoices: 0,
+    pendingPayments: 0,
+    partiallyPaid: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         router.replace("/signin");
         return;
@@ -49,9 +65,104 @@ export default function HomePage() {
     checkAuth();
   }, [router]);
 
+  // Function to fetch dashboard statistics
+  const fetchDashboardStats = async () => {
+    setRefreshing(true);
+    try {
+      // Fetch all clients
+      const { data: clients, error: clientsError } = await supabase
+        .from("clients")
+        .select("regular_balance, paid_amount");
+
+      // Fetch all invoices
+      const { data: invoices, error: invoicesError } = await supabase
+        .from("invoices")
+        .select("status, total_amount, amount_paid, balance_due");
+
+      // Fetch all receipts
+      const { data: receipts, error: receiptsError } = await supabase
+        .from("receipts")
+        .select("amount");
+
+      if (clientsError || invoicesError || receiptsError) {
+        console.error("Error fetching dashboard data:", {
+          clientsError,
+          invoicesError,
+          receiptsError,
+        });
+        return;
+      }
+
+      // Calculate statistics
+      const totalClients = clients?.length || 0;
+      const totalInvoices = invoices?.length || 0;
+      const totalReceipts = receipts?.length || 0;
+
+      // Calculate outstanding amount (sum of all client regular_balance)
+      const totalOutstanding =
+        clients?.reduce(
+          (sum, client) => sum + (client.regular_balance || 0),
+          0
+        ) || 0;
+
+      // Calculate total collected (sum of all client paid_amount)
+      const totalCollected =
+        clients?.reduce((sum, client) => sum + (client.paid_amount || 0), 0) ||
+        0;
+
+      // Calculate invoice status counts
+      const fullyPaidInvoices =
+        invoices?.filter((inv) => inv.status === "paid").length || 0;
+      const pendingPayments =
+        invoices?.filter((inv) => inv.status === "unpaid").length || 0;
+      const partiallyPaid =
+        invoices?.filter((inv) => inv.status === "partially_paid").length || 0;
+
+      setStats({
+        totalClients,
+        totalInvoices,
+        totalOutstanding,
+        totalCollected,
+        totalReceipts,
+        fullyPaidInvoices,
+        pendingPayments,
+        partiallyPaid,
+      });
+
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Error fetching dashboard statistics:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Function to handle manual refresh
+  const handleRefresh = () => {
+    fetchDashboardStats();
+  };
+
+  // Fetch dashboard statistics on component mount
+  useEffect(() => {
+    fetchDashboardStats();
+  }, [supabase]);
+
+  // Auto-refresh dashboard every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchDashboardStats();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [supabase]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(event.target as Node)
+      ) {
         setPanelOpen(false);
       }
     }
@@ -69,15 +180,6 @@ export default function HomePage() {
     await supabase.auth.signOut();
     window.location.href = "/signin";
   };
-
-  const totalInvoices = invoices.length;
-  const totalReceipts = receipts.length;
-  const totalClients = clients.length;
-  const totalOutstanding = clients.reduce(
-    (sum, client) => sum + client.regularBalance,
-    0
-  );
-  const totalPaid = clients.reduce((sum, client) => sum + client.paidAmount, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
@@ -119,7 +221,9 @@ export default function HomePage() {
                       {user.name ? user.name[0].toUpperCase() : "U"}
                     </div>
                   )}
-                  <div className="text-lg font-semibold text-gray-900">{user.name}</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {user.name}
+                  </div>
                   <div className="text-sm text-gray-500">{user.email}</div>
                 </div>
                 <button
@@ -169,6 +273,16 @@ export default function HomePage() {
                 <FileText className="w-5 h-5 mr-2" />
                 Invoices
               </Link>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center px-8 py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw
+                  className={`w-5 h-5 mr-2 ${refreshing ? "animate-spin" : ""}`}
+                />
+                {refreshing ? "Refreshing..." : "Refresh"}
+              </button>
             </div>
           </div>
         </div>
@@ -186,9 +300,13 @@ export default function HomePage() {
                 <p className="text-sm font-medium text-gray-600">
                   Total Clients
                 </p>
-                <p className="text-3xl font-bold text-[#01303F]">
-                  {totalClients}
-                </p>
+                {loading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <p className="text-3xl font-bold text-[#01303F]">
+                    {stats.totalClients}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -202,9 +320,13 @@ export default function HomePage() {
                 <p className="text-sm font-medium text-gray-600">
                   Total Invoices
                 </p>
-                <p className="text-3xl font-bold text-[#01303F]">
-                  {totalInvoices}
-                </p>
+                {loading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <p className="text-3xl font-bold text-[#01303F]">
+                    {stats.totalInvoices}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -216,9 +338,13 @@ export default function HomePage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Outstanding</p>
-                <p className="text-3xl font-bold text-[#01303F]">
-                  ${totalOutstanding.toFixed(2)}
-                </p>
+                {loading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <p className="text-3xl font-bold text-[#01303F]">
+                    ${stats.totalOutstanding.toFixed(2)}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -232,14 +358,29 @@ export default function HomePage() {
                 <p className="text-sm font-medium text-gray-600">
                   Total Collected
                 </p>
-                <p className="text-3xl font-bold text-[#01303F]">
-                  ${totalPaid.toFixed(2)}
-                </p>
+                {loading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <p className="text-3xl font-bold text-[#01303F]">
+                    ${stats.totalCollected.toFixed(2)}
+                  </p>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Last Updated Info */}
+      {lastUpdated && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -337,9 +478,13 @@ export default function HomePage() {
                     Payment Receipts
                   </span>
                 </div>
-                <span className="text-lg font-bold text-[#01303F]">
-                  {totalReceipts}
-                </span>
+                {loading ? (
+                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  <span className="text-lg font-bold text-[#01303F]">
+                    {stats.totalReceipts}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
@@ -351,9 +496,13 @@ export default function HomePage() {
                     Fully Paid Invoices
                   </span>
                 </div>
-                <span className="text-lg font-bold text-[#01303F]">
-                  {invoices.filter((inv) => inv.status === "Paid").length}
-                </span>
+                {loading ? (
+                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  <span className="text-lg font-bold text-[#01303F]">
+                    {stats.fullyPaidInvoices}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-100">
@@ -365,9 +514,13 @@ export default function HomePage() {
                     Pending Payments
                   </span>
                 </div>
-                <span className="text-lg font-bold text-[#01303F]">
-                  {invoices.filter((inv: { status: string; }) => inv.status === "Unpaid").length}
-                </span>
+                {loading ? (
+                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  <span className="text-lg font-bold text-[#01303F]">
+                    {stats.pendingPayments}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
@@ -379,12 +532,13 @@ export default function HomePage() {
                     Partially Paid
                   </span>
                 </div>
-                <span className="text-lg font-bold text-[#01303F]">
-                  {
-                    invoices.filter((inv) => inv.status === "Partially Paid")
-                      .length
-                  }
-                </span>
+                {loading ? (
+                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  <span className="text-lg font-bold text-[#01303F]">
+                    {stats.partiallyPaid}
+                  </span>
+                )}
               </div>
             </div>
           </div>
