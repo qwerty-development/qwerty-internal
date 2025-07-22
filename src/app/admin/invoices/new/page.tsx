@@ -1,21 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useData } from "../../context/DataProvider";
+import { createClient } from "@/utils/supabase/client";
+import { createInvoice } from "@/utils/invoiceCreation";
 import Link from "next/link";
 
 export default function CreateInvoicePage() {
   const router = useRouter();
-  const { clients, addInvoice } = useData();
+  const supabase = createClient();
+  const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
-    clientId: "",
-    issueDate: new Date().toISOString().split("T")[0],
-    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    client_id: "",
+    issue_date: new Date().toISOString().split("T")[0],
+    due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0],
     description: "",
-    totalAmount: "",
+    total_amount: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,39 +28,66 @@ export default function CreateInvoicePage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.clientId) {
-      newErrors.clientId = "Please select a client";
+    if (!formData.client_id) {
+      newErrors.client_id = "Please select a client";
     }
 
     if (!formData.description.trim()) {
       newErrors.description = "Description is required";
     }
 
-    if (!formData.totalAmount || parseFloat(formData.totalAmount) <= 0) {
-      newErrors.totalAmount = "Please enter a valid amount greater than 0";
+    if (!formData.total_amount || parseFloat(formData.total_amount) <= 0) {
+      newErrors.total_amount = "Please enter a valid amount greater than 0";
     }
 
-    if (!formData.issueDate) {
-      newErrors.issueDate = "Issue date is required";
+    if (!formData.issue_date) {
+      newErrors.issue_date = "Issue date is required";
     }
 
-    if (!formData.dueDate) {
-      newErrors.dueDate = "Due date is required";
+    if (!formData.due_date) {
+      newErrors.due_date = "Due date is required";
     }
 
     if (
-      formData.issueDate &&
-      formData.dueDate &&
-      new Date(formData.dueDate) < new Date(formData.issueDate)
+      formData.issue_date &&
+      formData.due_date &&
+      new Date(formData.due_date) < new Date(formData.issue_date)
     ) {
-      newErrors.dueDate = "Due date must be after issue date";
+      newErrors.due_date = "Due date must be after issue date";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Fetch clients from database
+  useEffect(() => {
+    const fetchClients = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const { data, error } = await supabase
+          .from("clients")
+          .select("id, name")
+          .order("name");
+
+        if (error) {
+          setError(error.message);
+        } else {
+          setClients(data || []);
+        }
+      } catch (err) {
+        setError("Failed to load clients");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClients();
+  }, [supabase]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -65,17 +97,23 @@ export default function CreateInvoicePage() {
     setIsSubmitting(true);
 
     try {
-      addInvoice({
-        clientId: formData.clientId,
-        issueDate: formData.issueDate,
-        dueDate: formData.dueDate,
+      const result = await createInvoice({
+        client_id: formData.client_id,
+        issue_date: formData.issue_date,
+        due_date: formData.due_date,
         description: formData.description.trim(),
-        totalAmount: parseFloat(formData.totalAmount),
+        total_amount: parseFloat(formData.total_amount),
       });
 
-      router.push("/admin/invoices");
+      if (result.success) {
+        router.push("/admin/invoices");
+      } else {
+        setError(result.error || "Failed to create invoice");
+        setIsSubmitting(false);
+      }
     } catch (error) {
       console.error("Error creating invoice:", error);
+      setError("An unexpected error occurred");
       setIsSubmitting(false);
     }
   };
@@ -93,6 +131,36 @@ export default function CreateInvoicePage() {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading clients...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Error Loading Clients
+          </h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -112,6 +180,11 @@ export default function CreateInvoicePage() {
       </div>
 
       <div className="bg-white rounded-lg shadow-md border p-6">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600">{error}</p>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label
@@ -121,12 +194,12 @@ export default function CreateInvoicePage() {
               Client *
             </label>
             <select
-              id="clientId"
-              name="clientId"
-              value={formData.clientId}
+              id="client_id"
+              name="client_id"
+              value={formData.client_id}
               onChange={handleChange}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.clientId ? "border-red-300" : "border-gray-300"
+                errors.client_id ? "border-red-300" : "border-gray-300"
               }`}
             >
               <option value="">Select a client</option>
@@ -136,8 +209,8 @@ export default function CreateInvoicePage() {
                 </option>
               ))}
             </select>
-            {errors.clientId && (
-              <p className="mt-1 text-sm text-red-600">{errors.clientId}</p>
+            {errors.client_id && (
+              <p className="mt-1 text-sm text-red-600">{errors.client_id}</p>
             )}
           </div>
 
@@ -151,16 +224,16 @@ export default function CreateInvoicePage() {
               </label>
               <input
                 type="date"
-                id="issueDate"
-                name="issueDate"
-                value={formData.issueDate}
+                id="issue_date"
+                name="issue_date"
+                value={formData.issue_date}
                 onChange={handleChange}
                 className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.issueDate ? "border-red-300" : "border-gray-300"
+                  errors.issue_date ? "border-red-300" : "border-gray-300"
                 }`}
               />
-              {errors.issueDate && (
-                <p className="mt-1 text-sm text-red-600">{errors.issueDate}</p>
+              {errors.issue_date && (
+                <p className="mt-1 text-sm text-red-600">{errors.issue_date}</p>
               )}
             </div>
 
@@ -173,16 +246,16 @@ export default function CreateInvoicePage() {
               </label>
               <input
                 type="date"
-                id="dueDate"
-                name="dueDate"
-                value={formData.dueDate}
+                id="due_date"
+                name="due_date"
+                value={formData.due_date}
                 onChange={handleChange}
                 className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.dueDate ? "border-red-300" : "border-gray-300"
+                  errors.due_date ? "border-red-300" : "border-gray-300"
                 }`}
               />
-              {errors.dueDate && (
-                <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>
+              {errors.due_date && (
+                <p className="mt-1 text-sm text-red-600">{errors.due_date}</p>
               )}
             </div>
           </div>
@@ -223,20 +296,20 @@ export default function CreateInvoicePage() {
               </span>
               <input
                 type="number"
-                id="totalAmount"
-                name="totalAmount"
-                value={formData.totalAmount}
+                id="total_amount"
+                name="total_amount"
+                value={formData.total_amount}
                 onChange={handleChange}
                 step="0.01"
                 min="0"
                 className={`w-full pl-8 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.totalAmount ? "border-red-300" : "border-gray-300"
+                  errors.total_amount ? "border-red-300" : "border-gray-300"
                 }`}
                 placeholder="0.00"
               />
             </div>
-            {errors.totalAmount && (
-              <p className="mt-1 text-sm text-red-600">{errors.totalAmount}</p>
+            {errors.total_amount && (
+              <p className="mt-1 text-sm text-red-600">{errors.total_amount}</p>
             )}
           </div>
 

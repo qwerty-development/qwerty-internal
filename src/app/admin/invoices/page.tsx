@@ -1,15 +1,85 @@
 "use client";
 
-import { useData } from "../context/DataProvider";
+import { useState, useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 
 export default function InvoiceListPage() {
-  const { invoices, clients } = useData();
+  const supabase = createClient();
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Fetch invoices with client information
+        const { data: invoicesData, error: invoicesError } = await supabase
+          .from("invoices")
+          .select(
+            `
+            *,
+            clients (
+              id,
+              name
+            )
+          `
+          )
+          .order("created_at", { ascending: false });
+
+        if (invoicesError) {
+          setError(invoicesError.message);
+        } else {
+          setInvoices(invoicesData || []);
+        }
+      } catch (err) {
+        setError("Failed to load invoices");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [supabase]);
 
   const getClientName = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
-    return client ? client.name : "Unknown Client";
+    const invoice = invoices.find((inv) => inv.client_id === clientId);
+    return invoice?.clients?.name || "Unknown Client";
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading invoices...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Error Loading Invoices
+          </h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -66,37 +136,41 @@ export default function InvoiceListPage() {
               {invoices.map((invoice) => (
                 <tr key={invoice.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {invoice.invoiceNumber}
+                    {invoice.invoice_number}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {getClientName(invoice.clientId)}
+                    {invoice.clients?.name || "Unknown Client"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(invoice.issueDate).toLocaleDateString()}
+                    {new Date(invoice.issue_date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(invoice.dueDate).toLocaleDateString()}
+                    {new Date(invoice.due_date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${invoice.totalAmount.toFixed(2)}
+                    ${invoice.total_amount?.toFixed(2) || "0.00"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                    ${invoice.amountPaid.toFixed(2)}
+                    ${invoice.amount_paid?.toFixed(2) || "0.00"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${invoice.balanceDue.toFixed(2)}
+                    ${invoice.balance_due?.toFixed(2) || "0.00"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        invoice.status === "Paid"
+                        invoice.status === "paid"
                           ? "bg-green-100 text-green-800"
-                          : invoice.status === "Partially Paid"
+                          : invoice.status === "partially_paid"
                           ? "bg-yellow-100 text-yellow-800"
                           : "bg-red-100 text-red-800"
                       }`}
                     >
-                      {invoice.status}
+                      {invoice.status === "paid"
+                        ? "Paid"
+                        : invoice.status === "partially_paid"
+                        ? "Partially Paid"
+                        : "Unpaid"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -107,7 +181,7 @@ export default function InvoiceListPage() {
                       >
                         View Details
                       </Link>
-                      {invoice.balanceDue > 0 && (
+                      {invoice.balance_due > 0 && (
                         <Link
                           href={`/admin/invoices/${invoice.id}#payment`}
                           className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition-colors"
