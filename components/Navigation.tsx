@@ -91,7 +91,7 @@ const Navigation = () => {
 
           <div className="flex items-center space-x-1">
             {userLoaded && user?.role === "admin" && (
-              <>
+              <div className="" style={{ paddingRight: "80px" }}>
                 <Link
                   href="/admin/clients"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -132,10 +132,10 @@ const Navigation = () => {
                 >
                   Tickets
                 </Link>
-              </>
+              </div>
             )}
             {/* User Avatar/Profile */}
-            {user && (
+            {/* {user && (
               <div className="relative ml-4">
                 <button
                   className="w-10 h-10 rounded-full border-2 border-gray-200 bg-gray-100 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -183,7 +183,7 @@ const Navigation = () => {
                   </div>
                 )}
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>
