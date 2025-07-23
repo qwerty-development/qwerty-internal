@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { createPayment } from "@/utils/paymentCreation";
 import Link from "next/link";
 
 export default function InvoiceDetailPage() {
@@ -26,6 +27,7 @@ export default function InvoiceDetailPage() {
     {}
   );
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   // Fetch invoice, client, and receipts data
   useEffect(() => {
@@ -34,6 +36,32 @@ export default function InvoiceDetailPage() {
       setError(null);
 
       try {
+        console.log("Fetching invoice with ID:", invoiceId);
+        console.log("Invoice ID type:", typeof invoiceId);
+
+        // Validate invoice ID
+        if (!invoiceId || invoiceId === "undefined" || invoiceId === "null") {
+          setError("Invalid invoice ID");
+          setLoading(false);
+          return;
+        }
+
+        // Test database connection first
+        console.log("Testing database connection...");
+        const { data: testData, error: testError } = await supabase
+          .from("invoices")
+          .select("id")
+          .limit(1);
+
+        if (testError) {
+          console.error("Database connection test failed:", testError);
+          setError(`Database connection failed: ${testError.message}`);
+          setLoading(false);
+          return;
+        }
+
+        console.log("Database connection test successful");
+
         // Fetch invoice with client information
         const { data: invoiceData, error: invoiceError } = await supabase
           .from("invoices")
@@ -53,13 +81,38 @@ export default function InvoiceDetailPage() {
           .single();
 
         if (invoiceError) {
-          setError("Invoice not found");
-          setLoading(false);
-          return;
-        }
+          console.error("Invoice fetch error:", invoiceError);
 
-        setInvoice(invoiceData);
-        setClient(invoiceData.clients);
+          // Try fetching invoice without client data as fallback
+          console.log("Trying fallback query without client data...");
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from("invoices")
+            .select("*")
+            .eq("id", invoiceId)
+            .single();
+
+          if (fallbackError) {
+            console.error("Fallback query also failed:", fallbackError);
+            setError(`Invoice not found: ${invoiceError.message}`);
+            setLoading(false);
+            return;
+          } else {
+            console.log("Fallback query succeeded:", fallbackData);
+            setInvoice(fallbackData);
+            setClient(null);
+          }
+        } else {
+          console.log("Invoice data:", invoiceData);
+          setInvoice(invoiceData);
+
+          // Set client data (might be null if relationship is broken)
+          if (invoiceData.clients) {
+            setClient(invoiceData.clients);
+          } else {
+            console.warn("No client data found for invoice:", invoiceData.id);
+            setClient(null);
+          }
+        }
 
         // Fetch receipts for this invoice
         const { data: receiptsData, error: receiptsError } = await supabase
@@ -68,10 +121,13 @@ export default function InvoiceDetailPage() {
           .eq("invoice_id", invoiceId)
           .order("payment_date", { ascending: false });
 
-        if (!receiptsError) {
+        if (receiptsError) {
+          console.error("Receipts fetch error:", receiptsError);
+        } else {
           setReceipts(receiptsData || []);
         }
       } catch (err) {
+        console.error("Unexpected error:", err);
         setError("Failed to load invoice data");
       }
 
@@ -94,7 +150,7 @@ export default function InvoiceDetailPage() {
     );
   }
 
-  if (error || !invoice || !client) {
+  if (error || !invoice) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="text-center py-12">
@@ -102,8 +158,18 @@ export default function InvoiceDetailPage() {
             Invoice Not Found
           </h1>
           <p className="text-gray-600 mb-6">
-            The invoice you're looking for doesn't exist.
+            {error || "The invoice you're looking for doesn't exist."}
           </p>
+          {error && error.includes("Invoice not found:") && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-left">
+              <p className="text-yellow-800 text-sm">
+                <strong>Debug Info:</strong> Invoice ID: {invoiceId}
+              </p>
+              <p className="text-yellow-800 text-sm mt-1">
+                <strong>Error:</strong> {error}
+              </p>
+            </div>
+          )}
           <Link
             href="/admin/invoices"
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
@@ -148,7 +214,7 @@ export default function InvoiceDetailPage() {
     setIsSubmittingPayment(true);
 
     try {
-      // Generate receipt number
+      // Generate receipt number first
       const { data: lastReceipt, error: receiptError } = await supabase
         .from("receipts")
         .select("receipt_number")
@@ -166,74 +232,35 @@ export default function InvoiceDetailPage() {
         }
       }
 
-      // Create receipt
-      const { error: createReceiptError } = await supabase
-        .from("receipts")
-        .insert({
-          client_id: invoice.client_id,
-          invoice_id: invoice.id,
-          receipt_number: receiptNumber,
-          payment_date: paymentForm.paymentDate,
-          amount: parseFloat(paymentForm.amount),
-          payment_method: paymentForm.paymentMethod,
+      // Create payment using API
+      const result = await createPayment({
+        client_id: invoice.client_id,
+        invoice_id: invoice.id,
+        receipt_number: receiptNumber,
+        payment_date: paymentForm.paymentDate,
+        amount: paymentForm.amount,
+        payment_method: paymentForm.paymentMethod,
+      });
+
+      if (result.success) {
+        // Show success message
+        setPaymentSuccess(true);
+        setPaymentErrors({});
+
+        // Reset form
+        setPaymentForm({
+          amount: "",
+          paymentDate: new Date().toISOString().split("T")[0],
+          paymentMethod: "Bank Transfer",
         });
 
-      if (createReceiptError) {
-        throw new Error(
-          `Failed to create receipt: ${createReceiptError.message}`
-        );
+        // Refresh data after a short delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        throw new Error(result.error || "Failed to create payment");
       }
-
-      // Update invoice
-      const newAmountPaid =
-        invoice.amount_paid + parseFloat(paymentForm.amount);
-      const newBalanceDue = invoice.total_amount - newAmountPaid;
-      const newStatus = newBalanceDue === 0 ? "paid" : "partially_paid";
-
-      const { error: updateInvoiceError } = await supabase
-        .from("invoices")
-        .update({
-          amount_paid: newAmountPaid,
-          balance_due: newBalanceDue,
-          status: newStatus,
-        })
-        .eq("id", invoice.id);
-
-      if (updateInvoiceError) {
-        throw new Error(
-          `Failed to update invoice: ${updateInvoiceError.message}`
-        );
-      }
-
-      // Update client balance
-      const { data: currentClient, error: fetchClientError } = await supabase
-        .from("clients")
-        .select("paid_amount, regular_balance")
-        .eq("id", invoice.client_id)
-        .single();
-
-      if (!fetchClientError && currentClient) {
-        const newPaidAmount =
-          (currentClient.paid_amount || 0) + parseFloat(paymentForm.amount);
-        const newRegularBalance =
-          (currentClient.regular_balance || 0) - parseFloat(paymentForm.amount);
-
-        const { error: updateClientError } = await supabase
-          .from("clients")
-          .update({
-            paid_amount: newPaidAmount,
-            regular_balance: newRegularBalance,
-          })
-          .eq("id", invoice.client_id);
-
-        if (updateClientError) {
-          console.error("Failed to update client balance:", updateClientError);
-          // Don't fail the entire operation if balance update fails
-        }
-      }
-
-      // Refresh data
-      window.location.reload();
     } catch (error) {
       console.error("Error adding payment:", error);
       setError(
@@ -276,12 +303,14 @@ export default function InvoiceDetailPage() {
             </p>
           </div>
           <div className="flex space-x-3">
-            <Link
-              href={`/admin/clients/${client.id}`}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              View Client
-            </Link>
+            {client && (
+              <Link
+                href={`/admin/clients/${client.id}`}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                View Client
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -305,7 +334,9 @@ export default function InvoiceDetailPage() {
               <label className="block text-sm font-medium text-gray-500">
                 Client
               </label>
-              <p className="text-sm text-gray-900 mt-1">{client.name}</p>
+              <p className="text-sm text-gray-900 mt-1">
+                {client ? client.name : "Client not found"}
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">
@@ -397,6 +428,13 @@ export default function InvoiceDetailPage() {
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
                 <p className="text-red-600">{error}</p>
+              </div>
+            )}
+            {paymentSuccess && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-green-600">
+                  Payment added successfully! Refreshing page...
+                </p>
               </div>
             )}
             <form onSubmit={handlePaymentSubmit} className="space-y-6">
