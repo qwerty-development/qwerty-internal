@@ -12,6 +12,7 @@ import { createClient } from "@/utils/supabase/client";
 // TypeScript Interfaces
 interface Ticket {
   id: string;
+  client_id: string;
   title: string;
   description: string;
   page: string;
@@ -130,9 +131,25 @@ export default function Dashboard() {
   // Fetch tickets for the authenticated user
   useEffect(() => {
     const fetchTickets = async () => {
+      if (!user?.id) return;
+
+      // First get the client record for this user
+      const { data: client, error: clientError } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (clientError || !client) {
+        setTickets([]);
+        return;
+      }
+
+      // Then fetch tickets for this client
       const { data, error } = await supabase
         .from("tickets")
-        .select("id, title, description, page, file_url, status, created_at")
+        .select("id, client_id, title, description, page, file_url, status, created_at")
+        .eq("client_id", client.id)
         .order("created_at", { ascending: false });
       
       if (!error && data) {
@@ -141,7 +158,7 @@ export default function Dashboard() {
     };
     
     fetchTickets();
-  }, [formSuccess]);
+  }, [formSuccess, user]);
 
   // Fetch invoices for the signed-in client only
   useEffect(() => {
@@ -271,12 +288,11 @@ export default function Dashboard() {
         setFormLoading(false);
         return;
       }
-      // Insert ticket into database with user_id and client_id
+      // Insert ticket into database with client_id
       const { error: insertError } = await supabase
         .from("tickets")
         .insert([
           {
-            user_id: user.id,
             client_id: client.id,
             title: form.title,
             description: form.description,

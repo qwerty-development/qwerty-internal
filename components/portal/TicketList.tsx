@@ -3,6 +3,7 @@ import { FileText, Calendar, CheckCircle, Clock, XCircle, Download } from "lucid
 
 interface Ticket {
   id: string;
+  client_id: string;
   title: string;
   description: string;
   page: string;
