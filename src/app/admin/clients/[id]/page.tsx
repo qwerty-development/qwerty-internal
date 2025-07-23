@@ -4,6 +4,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
+import {
+  deleteClientCompletely,
+  getClientDeletionSummary,
+} from "@/utils/clientDeletion";
+import DeleteClientDialog from "@/components/DeleteClientDialog";
 
 export default function ClientDetailPage() {
   const params = useParams();
@@ -16,6 +21,9 @@ export default function ClientDetailPage() {
   const [clientReceipts, setClientReceipts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletionSummary, setDeletionSummary] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -69,6 +77,46 @@ export default function ClientDetailPage() {
     }
   }, [clientId, supabase]);
 
+  const handleDeleteClick = async () => {
+    setShowDeleteDialog(true);
+          try {
+        const summaryResult = await getClientDeletionSummary(clientId);
+      if (summaryResult.success && summaryResult.summary) {
+        setDeletionSummary(summaryResult.summary);
+      } else {
+        console.error("Failed to get deletion summary:", summaryResult);
+        setError(
+          summaryResult.error ||
+            summaryResult.message ||
+            "Failed to load deletion summary"
+        );
+        setShowDeleteDialog(false);
+      }
+    } catch (error) {
+      console.error("Error fetching deletion summary:", error);
+      setError("Failed to load deletion summary");
+      setShowDeleteDialog(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleting(true);
+    const result = await deleteClientCompletely(clientId);
+
+    if (result.success) {
+      router.push("/admin/clients");
+    } else {
+      setError(result.error || "Failed to delete client");
+      setDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteDialog(false);
+    setDeletionSummary(null);
+  };
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -119,12 +167,20 @@ export default function ClientDetailPage() {
               Client Details & Financial Summary
             </p>
           </div>
-          <Link
-            href={`/admin/clients/${client.id}/edit`}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Edit Client
-          </Link>
+          <div className="flex space-x-3">
+            <Link
+              href={`/admin/clients/${client.id}/edit`}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Edit Client
+            </Link>
+            <button
+              onClick={handleDeleteClick}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Delete Client
+            </button>
+          </div>
         </div>
       </div>
 
@@ -383,6 +439,15 @@ export default function ClientDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Client Dialog */}
+      <DeleteClientDialog
+        isOpen={showDeleteDialog}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        summary={deletionSummary}
+        loading={deleting}
+      />
     </div>
   );
 }
