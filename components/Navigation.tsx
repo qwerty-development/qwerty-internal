@@ -25,7 +25,7 @@ const Navigation = () => {
       }
       const { data, error } = await supabase
         .from("users")
-        .select("id, name, email, avatar_url, role")
+        .select("id, name, avatar_url, role")
         .eq("id", session.user.id)
         .single();
       if (!error && data) setUser(data);
