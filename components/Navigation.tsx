@@ -16,7 +16,9 @@ const Navigation = () => {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         setUserLoaded(true);
         return;
@@ -35,7 +37,10 @@ const Navigation = () => {
   // Close panel on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(event.target as Node)
+      ) {
         setPanelOpen(false);
       }
     }
@@ -108,6 +113,16 @@ const Navigation = () => {
                   Invoices
                 </Link>
                 <Link
+                  href="/admin/quotations"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive("/admin/quotations")
+                      ? "bg-[#01303F] text-white shadow-lg"
+                      : "text-gray-700 hover:text-[#01303F] hover:bg-gray-50"
+                  }`}
+                >
+                  Quotations
+                </Link>
+                <Link
                   href="/admin/tickets"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/admin/tickets")
@@ -154,7 +169,9 @@ const Navigation = () => {
                           <UserIcon className="w-10 h-10 text-blue-900" />
                         </div>
                       )}
-                      <div className="text-lg font-semibold text-gray-900">{user.name}</div>
+                      <div className="text-lg font-semibold text-gray-900">
+                        {user.name}
+                      </div>
                       <div className="text-sm text-gray-500">{user.email}</div>
                     </div>
                     <button
