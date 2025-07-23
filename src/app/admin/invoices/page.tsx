@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ChevronUp, ChevronDown } from "lucide-react";
 
 export default function InvoiceListPage() {
   const supabase = createClient();
@@ -12,6 +12,10 @@ export default function InvoiceListPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sorting state
+  const [sortField, setSortField] = useState<string>("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Function to fetch invoice data
   const fetchData = async () => {
@@ -31,7 +35,7 @@ export default function InvoiceListPage() {
           )
         `
         )
-        .order("created_at", { ascending: false });
+        .order(sortField, { ascending: sortDirection === "asc" });
 
       if (invoicesError) {
         setError(invoicesError.message);
@@ -46,6 +50,40 @@ export default function InvoiceListPage() {
     }
   };
 
+  // Function to handle sorting
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // If clicking the same field, toggle direction
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // If clicking a new field, set it as sort field and default to asc
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Function to get sort icon
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return null;
+    }
+    return sortDirection === "asc" ? (
+      <ChevronUp className="w-4 h-4 ml-1 text-blue-600" />
+    ) : (
+      <ChevronDown className="w-4 h-4 ml-1 text-blue-600" />
+    );
+  };
+
+  // Function to get header styling based on sort state
+  const getHeaderStyle = (field: string) => {
+    const baseStyle =
+      "px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors";
+    if (sortField === field) {
+      return `${baseStyle} text-blue-600 bg-blue-50`;
+    }
+    return `${baseStyle} text-gray-500`;
+  };
+
   // Function to handle manual refresh
   const handleRefresh = () => {
     fetchData();
@@ -54,6 +92,13 @@ export default function InvoiceListPage() {
   useEffect(() => {
     fetchData();
   }, [supabase]);
+
+  // Refetch data when sorting changes
+  useEffect(() => {
+    if (!loading) {
+      fetchData();
+    }
+  }, [sortField, sortDirection]);
 
   // Auto-refresh invoices every 30 seconds
   useEffect(() => {
@@ -112,6 +157,12 @@ export default function InvoiceListPage() {
                 {invoices.length === 1 ? "invoice" : "invoices"})
               </span>
             )}
+            {sortField !== "created_at" && (
+              <span className="ml-2 text-sm text-gray-500">
+                • Sorted by {sortField.replace("_", " ")} (
+                {sortDirection === "asc" ? "A-Z" : "Z-A"})
+              </span>
+            )}
           </p>
         </div>
         <div className="flex space-x-3">
@@ -139,29 +190,77 @@ export default function InvoiceListPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Invoice Number
+                <th
+                  className={getHeaderStyle("invoice_number")}
+                  onClick={() => handleSort("invoice_number")}
+                >
+                  <div className="flex items-center">
+                    Invoice Number
+                    {getSortIcon("invoice_number")}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Client Name
+                <th
+                  className={getHeaderStyle("client_id")}
+                  onClick={() => handleSort("client_id")}
+                >
+                  <div className="flex items-center">
+                    Client Name
+                    {getSortIcon("client_id")}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Issue Date
+                <th
+                  className={getHeaderStyle("issue_date")}
+                  onClick={() => handleSort("issue_date")}
+                >
+                  <div className="flex items-center">
+                    Issue Date
+                    {getSortIcon("issue_date")}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Due Date
+                <th
+                  className={getHeaderStyle("due_date")}
+                  onClick={() => handleSort("due_date")}
+                >
+                  <div className="flex items-center">
+                    Due Date
+                    {getSortIcon("due_date")}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Amount
+                <th
+                  className={getHeaderStyle("total_amount")}
+                  onClick={() => handleSort("total_amount")}
+                >
+                  <div className="flex items-center">
+                    Total Amount
+                    {getSortIcon("total_amount")}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount Paid
+                <th
+                  className={getHeaderStyle("amount_paid")}
+                  onClick={() => handleSort("amount_paid")}
+                >
+                  <div className="flex items-center">
+                    Amount Paid
+                    {getSortIcon("amount_paid")}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Balance Due
+                <th
+                  className={getHeaderStyle("balance_due")}
+                  onClick={() => handleSort("balance_due")}
+                >
+                  <div className="flex items-center">
+                    Balance Due
+                    {getSortIcon("balance_due")}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                <th
+                  className={getHeaderStyle("status")}
+                  onClick={() => handleSort("status")}
+                >
+                  <div className="flex items-center">
+                    Status
+                    {getSortIcon("status")}
+                  </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
