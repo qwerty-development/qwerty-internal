@@ -1,3 +1,4 @@
+'use client'
 import React from "react";
 import { FileText, CheckCircle, Clock } from "lucide-react";
 

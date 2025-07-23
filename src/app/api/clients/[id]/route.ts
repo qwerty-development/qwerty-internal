@@ -25,15 +25,14 @@ interface ClientUpdateData {
 
 export async function PUT(
   request: NextRequest,
-  { params }: Promise<{ params: { id: string } }>
-) {
+  { params }: { params: Promise<{ id: string }> }
+) 
+{
   try {
-    const { params: resolvedParams } = await params;
-    const clientId = resolvedParams.id;
+    const { id: clientId } = await params;
     const updateData: ClientUpdateData = await request.json();
     const supabase = createServiceClient();
 
-    // First, get the client's user_id to update the users table
     const { data: clientData, error: fetchError } = await supabase
       .from("clients")
       .select("user_id")
@@ -47,9 +46,7 @@ export async function PUT(
       );
     }
 
-    // Update both clients and users tables atomically
     const [clientUpdate, userUpdate] = await Promise.all([
-      // Update clients table
       supabase
         .from("clients")
         .update({
@@ -63,7 +60,6 @@ export async function PUT(
         .select()
         .single(),
 
-      // Update users table
       supabase
         .from("users")
         .update({
@@ -75,7 +71,6 @@ export async function PUT(
         .single(),
     ]);
 
-    // Check for errors in either update
     if (clientUpdate.error) {
       return NextResponse.json(
         {
@@ -96,7 +91,6 @@ export async function PUT(
       );
     }
 
-    // Return success with updated data
     return NextResponse.json({
       success: true,
       client: clientUpdate.data,

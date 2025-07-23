@@ -15,23 +15,29 @@ import {
   Clock,
   FileText,
   User,
+  type LucideIcon,
 } from "lucide-react";
 
+// Define strict types for ticket status and sortable fields
+type TicketStatus = "pending" | "approved" | "declined";
+type SortableField = "created_at" | "title";
+
+// Updated Ticket interface to accurately reflect possible data shapes
 interface Ticket {
   id: string;
   client_id: string;
   title: string;
   description: string;
-  page: string;
+  page: string | null; // Can be null
   file_url: string | null;
-  status: string;
+  status: TicketStatus; // Use the strict type
   created_at: string;
-  viewed: boolean;
-  clients: {
+  viewed: boolean | null; // Can be null
+  clients: { // The related client record can be null
     id: string;
     name: string;
     contact_email: string;
-  };
+  } | null;
 }
 
 export default function AdminTicketsPage() {
@@ -41,10 +47,10 @@ export default function AdminTicketsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Filtering and search state
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  // Filtering and search state with stricter types
+  const [statusFilter, setStatusFilter] = useState<TicketStatus | "all">("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [sortField, setSortField] = useState<string>("created_at");
+  const [sortField, setSortField] = useState<SortableField>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Statistics
@@ -61,6 +67,7 @@ export default function AdminTicketsPage() {
     setError(null);
 
     try {
+      // The data from Supabase should be cast to the correct type
       const { data, error } = await supabase
         .from("tickets")
         .select(
@@ -86,15 +93,14 @@ export default function AdminTicketsPage() {
       if (error) {
         setError(error.message);
       } else {
-        setTickets(data || []);
+        const typed = (data ?? []) as unknown as Ticket[]; // 👈 bridge the mismatch
+        setTickets(typed);
 
         // Calculate statistics
-        const total = data?.length || 0;
-        const pending = data?.filter((t) => t.status === "pending").length || 0;
-        const approved =
-          data?.filter((t) => t.status === "approved").length || 0;
-        const declined =
-          data?.filter((t) => t.status === "declined").length || 0;
+        const total = typed.length;
+        const pending = typed.filter((t) => t.status === "pending").length;
+        const approved = typed.filter((t) => t.status === "approved").length;
+        const declined = typed.filter((t) => t.status === "declined").length;
 
         setStats({ total, pending, approved, declined });
       }
@@ -106,8 +112,8 @@ export default function AdminTicketsPage() {
     }
   };
 
-  // Function to handle sorting
-  const handleSort = (field: string) => {
+  // Function to handle sorting with stricter field type
+  const handleSort = (field: SortableField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -116,8 +122,8 @@ export default function AdminTicketsPage() {
     }
   };
 
-  // Function to update ticket status
-  const updateTicketStatus = async (ticketId: string, newStatus: string) => {
+  // Function to update ticket status with stricter status type
+  const updateTicketStatus = async (ticketId: string, newStatus: TicketStatus) => {
     try {
       const { error } = await supabase
         .from("tickets")
@@ -138,15 +144,15 @@ export default function AdminTicketsPage() {
     }
   };
 
-  // Get header style for sorting
-  const getHeaderStyle = (field: string) => {
+  // Get header style for sorting with stricter field type
+  const getHeaderStyle = (field: SortableField) => {
     const baseStyle =
       "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors";
     return sortField === field ? `${baseStyle} bg-gray-100` : baseStyle;
   };
 
-  // Get sort icon
-  const getSortIcon = (field: string) => {
+  // Get sort icon with stricter field type
+  const getSortIcon = (field: SortableField) => {
     if (sortField !== field) return null;
     return sortDirection === "asc" ? (
       <ChevronUp className="w-4 h-4 ml-1" />
@@ -155,21 +161,26 @@ export default function AdminTicketsPage() {
     );
   };
 
-  // Filter tickets based on status and search
+  // Filter tickets based on status and search, safely handling null clients
   const filteredTickets = tickets.filter((ticket) => {
     const matchesStatus =
       statusFilter === "all" || ticket.status === statusFilter;
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
     const matchesSearch =
       searchTerm === "" ||
-      ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.clients.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(searchTerm.toLowerCase());
+      ticket.title.toLowerCase().includes(lowerCaseSearchTerm) ||
+      (ticket.clients?.name ?? "").toLowerCase().includes(lowerCaseSearchTerm) ||
+      ticket.description.toLowerCase().includes(lowerCaseSearchTerm);
 
     return matchesStatus && matchesSearch;
   });
 
-  // Get status configuration
-  const getStatusConfig = (status: string) => {
+  // Get status configuration with stricter status type
+  const getStatusConfig = (status: TicketStatus): {
+    className: string;
+    icon: LucideIcon;
+    label: string;
+  } => {
     switch (status) {
       case "approved":
         return {
@@ -183,7 +194,7 @@ export default function AdminTicketsPage() {
           icon: XCircle,
           label: "Declined",
         };
-      default:
+      case "pending":
         return {
           className: "bg-yellow-100 text-yellow-800 border border-yellow-200",
           icon: Clock,
@@ -313,7 +324,9 @@ export default function AdminTicketsPage() {
             <Filter className="w-4 h-4 text-gray-500" />
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as TicketStatus | "all")
+              }
               className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Status</option>
@@ -406,9 +419,9 @@ export default function AdminTicketsPage() {
                       <td className="px-6 py-4">
                         <div className="max-w-xs">
                           <div className="font-medium text-gray-900 truncate flex items-center">
+                            {/* This logic correctly handles boolean or null */}
                             {(ticket.viewed === false ||
-                              ticket.viewed === null ||
-                              ticket.viewed === undefined) && (
+                              ticket.viewed === null) && (
                               <div
                                 className="w-2 h-2 bg-red-500 rounded-full mr-2 flex-shrink-0"
                                 title="New ticket"
@@ -425,16 +438,18 @@ export default function AdminTicketsPage() {
                         <div className="flex items-center">
                           <User className="w-4 h-4 text-gray-400 mr-2" />
                           <div>
+                            {/* Safely access client data with fallbacks */}
                             <div className="text-sm font-medium text-gray-900">
-                              {ticket.clients.name}
+                              {ticket.clients?.name || "N/A"}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {ticket.clients.contact_email}
+                              {ticket.clients?.contact_email || "No email"}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {/* This logic correctly handles string or null */}
                         {ticket.page || "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

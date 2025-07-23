@@ -26,3 +26,179 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Custom utilities for glassmorphism effects */
+@layer utilities {
+  .shadow-glass {
+    box-shadow: 
+      0 8px 32px 0 rgba(31, 38, 135, 0.37),
+      0 4px 16px 0 rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  }
+  
+  .shadow-3xl {
+    box-shadow: 
+      0 20px 60px -12px rgba(0, 0, 0, 0.25),
+      0 8px 32px 0 rgba(31, 38, 135, 0.37),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .backdrop-blur-glass {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* Improved animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-in {
+    animation-fill-mode: both;
+  }
+
+  .fade-in-0 {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .zoom-in-95 {
+    animation: zoomIn 0.2s ease-out;
+  }
+
+  @keyframes zoomIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  /* Color utilities for QWERTY brand */
+  .text-qwerty {
+    color: #01303F;
+  }
+
+  .bg-qwerty {
+    background-color: #01303F;
+  }
+
+  .border-qwerty {
+    border-color: #01303F;
+  }
+
+  .text-qwerty-light {
+    color: #014a5f;
+  }
+
+  .bg-qwerty-light {
+    background-color: #014a5f;
+  }
+
+  /* Custom color classes for status indicators */
+  .text-success-700 {
+    color: rgb(21, 128, 61);
+  }
+
+  .text-warning-700 {
+    color: rgb(180, 83, 9);
+  }
+
+  .text-error-700 {
+    color: rgb(185, 28, 28);
+  }
+
+  .text-secondary-800 {
+    color: rgb(31, 41, 55);
+  }
+
+  .text-secondary-600 {
+    color: rgb(75, 85, 99);
+  }
+
+  .text-secondary-500 {
+    color: rgb(107, 114, 128);
+  }
+
+  .text-secondary-400 {
+    color: rgb(156, 163, 175);
+  }
+
+  .text-primary-600 {
+    color: #01303F;
+  }
+
+  .bg-success-100 {
+    background-color: rgb(220, 252, 231);
+  }
+
+  .bg-success-200 {
+    background-color: rgb(187, 247, 208);
+  }
+
+  .bg-warning-100 {
+    background-color: rgb(254, 243, 199);
+  }
+
+  .bg-warning-200 {
+    background-color: rgb(253, 230, 138);
+  }
+
+  .bg-error-100 {
+    background-color: rgb(254, 226, 226);
+  }
+
+  .bg-error-200 {
+    background-color: rgb(252, 165, 165);
+  }
+
+  .border-success-200 {
+    border-color: rgb(187, 247, 208);
+  }
+
+  .border-warning-200 {
+    border-color: rgb(253, 230, 138);
+  }
+
+  .border-error-200 {
+    border-color: rgb(252, 165, 165);
+  }
+
+  /* Hover effects */
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+}

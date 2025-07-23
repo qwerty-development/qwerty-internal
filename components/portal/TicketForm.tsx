@@ -1,5 +1,7 @@
+// components/portal/TicketForm.tsx
+'use client'
 import React from "react";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, Send } from "lucide-react";
 
 interface FormData {
   title: string;
@@ -33,88 +35,106 @@ const TicketForm: React.FC<Props> = ({
   };
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-xl">
-      <div className="p-8">
+    <div className="group relative overflow-hidden rounded-2xl backdrop-blur-md bg-gradient-to-br from-white/95 via-white/90 to-white/85 border border-white/20 shadow-2xl">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-300/5 to-blue-500/5"></div>
+      <div className="relative p-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-qwerty">Create Ticket</h2>
-          <div className="p-2 rounded-xl bg-qwerty text-white shadow-lg">
-            <Plus className="w-6 h-6" />
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent">
+            Create Support Ticket
+          </h2>
+          <div className="p-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg">
+            <Plus className="w-6 h-6 text-white" />
           </div>
         </div>
+        
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold text-qwerty mb-2">Title</label>
+            <label className="block text-sm font-semibold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent mb-2">
+              Title *
+            </label>
             <input
               name="title"
               type="text"
-              className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400"
+              className="w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur border border-gray-200/60 focus:border-[#01303F] focus:bg-white/90 focus:outline-none focus:ring-2 focus:ring-[#01303F]/20 transition-all duration-300 placeholder-gray-400"
               value={form.title}
               onChange={onChange}
               placeholder="Enter ticket title..."
               required
             />
           </div>
+          
           <div>
-            <label className="block text-sm font-semibold text-qwerty mb-2">Description</label>
+            <label className="block text-sm font-semibold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent mb-2">
+              Description *
+            </label>
             <textarea
               name="description"
-              className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400 resize-none"
+              className="w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur border border-gray-200/60 focus:border-[#01303F] focus:bg-white/90 focus:outline-none focus:ring-2 focus:ring-[#01303F]/20 transition-all duration-300 placeholder-gray-400 resize-none"
               value={form.description}
               onChange={onChange}
-              placeholder="Describe the issue..."
+              placeholder="Describe the issue in detail..."
               required
               rows={4}
             />
           </div>
+          
           <div>
-            <label className="block text-sm font-semibold text-qwerty mb-2">Page or Route</label>
+            <label className="block text-sm font-semibold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent mb-2">
+              Page or Route *
+            </label>
             <input
               name="page"
               type="text"
-              className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400"
+              className="w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur border border-gray-200/60 focus:border-[#01303F] focus:bg-white/90 focus:outline-none focus:ring-2 focus:ring-[#01303F]/20 transition-all duration-300 placeholder-gray-400"
               value={form.page}
               onChange={onChange}
               placeholder="e.g. /dashboard/settings"
               required
             />
           </div>
+          
           <div>
-            <label className="block text-sm font-semibold text-qwerty mb-2">Attachment (optional)</label>
+            <label className="block text-sm font-semibold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent mb-2">
+              Attachment (optional)
+            </label>
             <div className="relative">
               <input
                 name="file"
                 type="file"
-                className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-qwerty hover:file:bg-gray-200"
+                className="w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur border border-gray-200/60 focus:border-[#01303F] focus:bg-white/90 focus:outline-none focus:ring-2 focus:ring-[#01303F]/20 transition-all duration-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-gray-100 file:to-gray-200 file:text-[#01303F] hover:file:from-gray-200 hover:file:to-gray-300"
                 onChange={onFileChange}
                 accept="*"
               />
               <Upload className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
           </div>
+          
           {error && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-              {error}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-red-50 to-red-100 border border-red-200 backdrop-blur">
+              <p className="text-red-700 text-sm font-medium">{error}</p>
             </div>
           )}
+          
           {success && (
-            <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
-              {success}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-green-50 to-green-100 border border-green-200 backdrop-blur">
+              <p className="text-green-700 text-sm font-medium">{success}</p>
             </div>
           )}
+          
           <button
             type="submit"
-            className="w-full py-4 rounded-xl bg-qwerty text-white font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-[#01303F] to-[#014a5f] text-white font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed group/btn"
             disabled={loading}
           >
             {loading ? (
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-3">
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                Submitting...
+                <span>Submitting...</span>
               </div>
             ) : (
-              <div className="flex items-center justify-center gap-2">
-                <Plus className="w-5 h-5" />
-                Submit Ticket
+              <div className="flex items-center justify-center gap-3">
+                <Send className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-300" />
+                <span>Submit Support Ticket</span>
               </div>
             )}
           </button>

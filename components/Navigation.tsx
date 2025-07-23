@@ -132,6 +132,50 @@ const Navigation = () => {
                 >
                   Tickets
                 </Link>
+                <Link
+                  href="/admin/updates"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive("/admin/updates")
+                      ? "bg-[#01303F] text-white shadow-lg"
+                      : "text-gray-700 hover:text-[#01303F] hover:bg-gray-50"
+                  }`}
+                >
+                  Updates
+                </Link>
+              </div>
+            )}
+            {userLoaded && user?.role === "client" && (
+              <div className="" style={{ paddingRight: "80px" }}>
+                <Link
+                  href="/portal"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive("/portal")
+                      ? "bg-[#01303F] text-white shadow-lg"
+                      : "text-gray-700 hover:text-[#01303F] hover:bg-gray-50"
+                  }`}
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/portal/updates"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive("/portal/updates")
+                      ? "bg-[#01303F] text-white shadow-lg"
+                      : "text-gray-700 hover:text-[#01303F] hover:bg-gray-50"
+                  }`}
+                >
+                  Updates
+                </Link>
+                <Link
+                  href="/portal/tickets"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive("/portal/tickets")
+                      ? "bg-[#01303F] text-white shadow-lg"
+                      : "text-gray-700 hover:text-[#01303F] hover:bg-gray-50"
+                  }`}
+                >
+                  Tickets
+                </Link>
               </div>
             )}
             {/* User Avatar/Profile */}

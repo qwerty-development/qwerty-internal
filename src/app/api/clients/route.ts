@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { generateRandomPassword } from "@/utils/passwordGenerator";
 
 // Create a service role client for admin operations
 const createServiceClient = () => {
@@ -16,104 +15,101 @@ const createServiceClient = () => {
   return createClient(supabaseUrl, supabaseServiceKey);
 };
 
-interface ClientData {
+interface ClientUpdateData {
   name: string;
-  email: string;
-  phone?: string;
+  contact_email?: string;
+  contact_phone?: string;
   address?: string;
   notes?: string;
 }
 
-export async function POST(request: NextRequest) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const clientData: ClientData = await request.json();
+    const clientId = (await params).id;
+    const updateData: ClientUpdateData = await request.json();
     const supabase = createServiceClient();
 
-    // 1. Generate random password
-    const password = generateRandomPassword(12);
-
-    // 2. Create Supabase Auth user (requires service role)
-    const { data: authUser, error: authError } =
-      await supabase.auth.admin.createUser({
-        email: clientData.email,
-        password: password,
-        email_confirm: true,
-      });
-
-    if (authError) {
-      return NextResponse.json(
-        { success: false, error: `Auth creation failed: ${authError.message}` },
-        { status: 400 }
-      );
-    }
-
-    // 3. Create user record
-    const { data: userRecord, error: userError } = await supabase
-      .from("users")
-      .insert({
-        id: authUser.user.id,
-        role: "client",
-        name: clientData.name,
-        phone: clientData.phone || null,
-      })
-      .select()
-      .single();
-
-    if (userError) {
-      // Rollback auth user if user record creation fails
-      await supabase.auth.admin.deleteUser(authUser.user.id);
-      return NextResponse.json(
-        {
-          success: false,
-          error: `User record creation failed: ${userError.message}`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // 4. Create client record
-    const { data: clientRecord, error: clientError } = await supabase
+    // First, get the client's user_id to update the users table
+    const { data: clientData, error: fetchError } = await supabase
       .from("clients")
-      .insert({
-        name: clientData.name,
-        contact_email: clientData.email,
-        contact_phone: clientData.phone || null,
-        address: clientData.address || null,
-        notes: clientData.notes || null,
-        user_id: authUser.user.id,
-      })
-      .select()
+      .select("user_id")
+      .eq("id", clientId)
       .single();
 
-    if (clientError) {
-      // Rollback both auth user and user record if client creation fails
-      await supabase.auth.admin.deleteUser(authUser.user.id);
-      await supabase.from("users").delete().eq("id", authUser.user.id);
+    if (fetchError || !clientData?.user_id) {
+      return NextResponse.json(
+        { success: false, error: "Could not find client's user record" },
+        { status: 404 }
+      );
+    }
+
+    // Update both clients and users tables atomically
+    const [clientUpdate, userUpdate] = await Promise.all([
+      // Update clients table
+      supabase
+        .from("clients")
+        .update({
+          name: updateData.name.trim(),
+          contact_phone: updateData.contact_phone?.trim() || null,
+          address: updateData.address?.trim() || null,
+          contact_email: updateData.contact_email?.trim() || null,
+          notes: updateData.notes?.trim() || null,
+        })
+        .eq("id", clientId)
+        .select()
+        .single(),
+
+      // Update users table
+      supabase
+        .from("users")
+        .update({
+          name: updateData.name.trim(),
+          phone: updateData.contact_phone?.trim() || null,
+        })
+        .eq("id", clientData.user_id)
+        .select()
+        .single(),
+    ]);
+
+    // Check for errors in either update
+    if (clientUpdate.error) {
       return NextResponse.json(
         {
           success: false,
-          error: `Client record creation failed: ${clientError.message}`,
+          error: `Client update failed: ${clientUpdate.error.message}`,
         },
         { status: 400 }
       );
     }
 
-    // 5. Return success with password
+    if (userUpdate.error) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `User update failed: ${userUpdate.error.message}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Return success with updated data
     return NextResponse.json({
       success: true,
-      password: password,
-      user: authUser.user,
-      client: clientRecord,
-      message: "Client created successfully!",
+      client: clientUpdate.data,
+      user: userUpdate.data,
+      message: "Client updated successfully!",
     });
   } catch (error) {
-    console.error("Client creation error:", error);
+    console.error("Client update error:", error);
     return NextResponse.json(
       {
         success: false,
         error:
           error instanceof Error ? error.message : "Unknown error occurred",
-        message: "Failed to create client",
+        message: "Failed to update client",
       },
       { status: 500 }
     );

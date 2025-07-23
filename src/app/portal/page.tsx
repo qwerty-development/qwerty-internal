@@ -19,6 +19,7 @@ interface Ticket {
   file_url: string | null;
   status: string;
   created_at: string;
+  viewed: boolean;
 }
 
 interface Invoice {
@@ -43,6 +44,9 @@ interface Update {
   title: string;
   content: string;
   created_at: string;
+  update_type: string;
+  ticket_id: string | null;
+  tickets?: any;
 }
 
 interface FormData {
@@ -148,7 +152,7 @@ export default function Dashboard() {
       // Then fetch tickets for this client
       const { data, error } = await supabase
         .from("tickets")
-        .select("id, client_id, title, description, page, file_url, status, created_at")
+        .select("id, client_id, title, description, page, file_url, status, created_at, viewed")
         .eq("client_id", client.id)
         .order("created_at", { ascending: false });
       
@@ -217,22 +221,46 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  // Fetch latest updates (global, not user-specific)
+  // Fetch latest updates for the signed-in client (client-specific or global)
   useEffect(() => {
     const fetchUpdates = async () => {
-      const { data, error } = await supabase
+      let clientId: string | null = null;
+
+      if (user?.id) {
+        const { data: client } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (client) {
+          clientId = client.id;
+        }
+      }
+
+      let query = supabase
         .from("updates")
-        .select("id, title, content, created_at")
+        .select(
+          "id, title, content, created_at, update_type, ticket_id, tickets(id, title, page, status, created_at)"
+        )
         .order("created_at", { ascending: false })
-        .limit(5);
-      
+        .limit(10);
+
+      if (clientId) {
+        query = query.or(`client_id.eq.${clientId},client_id.is.null`);
+      } else {
+        query = query.is("client_id", null);
+      }
+
+      const { data, error } = await query;
+
       if (!error && data) {
-        setUpdates(data as Update[]);
+        setUpdates((data || []) as Update[]);
       }
     };
-    
+
     fetchUpdates();
-  }, []);
+  }, [user]);
 
   // Handle form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -299,6 +327,7 @@ export default function Dashboard() {
             page: form.page,
             file_url: fileUrl,
             status: "pending",
+            viewed: false, // Default to false for new tickets
           },
         ]);
       
@@ -432,89 +461,142 @@ export default function Dashboard() {
       </div>
       {/* Statistics Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col items-center justify-center">
-            <div className="text-gray-500 text-sm mb-1">Total Tickets</div>
-            <div className="text-3xl font-bold text-qwerty">{totalTickets}</div>
-          </div>
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col items-center justify-center">
-            <div className="text-gray-500 text-sm mb-1">Outstanding Balance</div>
-            <div className="text-3xl font-bold text-qwerty">${balance.toFixed(2)}</div>
-          </div>
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col items-center justify-center">
-            <div className="text-gray-500 text-sm mb-1">Next Payment</div>
-            <div className="text-3xl font-bold text-qwerty">{nextPaymentDate ? new Date(nextPaymentDate).toLocaleDateString() : '-'}</div>
-          </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="group relative overflow-hidden rounded-2xl backdrop-blur-md bg-gradient-to-br from-white/20 via-white/10 to-white/5 border border-white/20 shadow-xl hover:shadow-3xl transition-all duration-500 hover:scale-[1.02]">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-blue-300/5 to-primary-500/10"></div>
+      <div className="relative p-6 flex flex-col items-center justify-center">
+        <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 mb-3">
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div className="text-sm font-medium text-gray-600 mb-1">Total Tickets</div>
+        <div className="text-3xl font-bold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent">
+          {totalTickets}
         </div>
       </div>
+    </div>
+
+    <div className="group relative overflow-hidden rounded-2xl backdrop-blur-md bg-gradient-to-br from-white/20 via-white/10 to-white/5 border border-white/20 shadow-xl hover:shadow-3xl transition-all duration-500 hover:scale-[1.02]">
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-emerald-300/5 to-green-500/10"></div>
+      <div className="relative p-6 flex flex-col items-center justify-center">
+        <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 mb-3">
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+          </svg>
+        </div>
+        <div className="text-sm font-medium text-gray-600 mb-1">Outstanding Balance</div>
+        <div className="text-3xl font-bold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent">
+          ${balance.toFixed(2)}
+        </div>
+      </div>
+    </div>
+
+    <div className="group relative overflow-hidden rounded-2xl backdrop-blur-md bg-gradient-to-br from-white/20 via-white/10 to-white/5 border border-white/20 shadow-xl hover:shadow-3xl transition-all duration-500 hover:scale-[1.02]">
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-purple-300/5 to-indigo-500/10"></div>
+      <div className="relative p-6 flex flex-col items-center justify-center">
+        <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 mb-3">
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div className="text-sm font-medium text-gray-600 mb-1">Next Payment</div>
+        <div className="text-3xl font-bold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent">
+          {nextPaymentDate ? new Date(nextPaymentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
       {/* Updates Section - full width */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <div className="rounded-2xl border border-gray-100 bg-white shadow-xl">
-          <div className="flex items-center justify-between p-8 pb-0">
-            <h2 className="text-2xl font-bold text-qwerty">Latest Updates</h2>
-            <a href="/portal/updates" className="text-qwerty font-semibold hover:underline">See more</a>
-          </div>
-          <div className="p-8 pt-4">
-            <UpdatesSection updates={latestUpdates} />
-          </div>
-        </div>
+  <div className="group relative overflow-hidden rounded-2xl backdrop-blur-md bg-gradient-to-br from-white/20 via-white/10 to-white/5 border border-white/20 shadow-xl hover:shadow-3xl transition-all duration-500">
+    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-blue-300/5 to-primary-500/10"></div>
+    <div className="relative">
+      <div className="flex items-center justify-between p-8 pb-4">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent">
+          Latest Updates
+        </h2>
+        <a 
+          href="/portal/updates" 
+          className="inline-flex items-center px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold text-sm hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+        >
+          See all updates
+        </a>
       </div>
+      <div className="px-8 pb-8">
+        <UpdatesSection updates={latestUpdates} />
+      </div>
+    </div>
+  </div>
+</div>
       {/* Main Content Grid: maintenance left, tickets right */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left: Account Summary (maintenance) */}
-          <div>
-            <AccountSummary 
-              balance={balance} 
-              maintenanceDue={maintenanceDue} 
-              nextPaymentDate={nextPaymentDate} 
-            />
-          </div>
-          {/* Right: Recent Tickets */}
-          <div>
-            <div className="rounded-2xl border border-gray-100 bg-white shadow-xl">
-              <div className="flex items-center justify-between p-8 pb-0">
-                <h2 className="text-2xl font-bold text-qwerty">Recent Tickets</h2>
-                <a href="/portal/tickets" className="text-qwerty font-semibold hover:underline">See all</a>
-              </div>
-              <div className="p-8 pt-4">
-                <TicketList tickets={latestTickets} />
-              </div>
-            </div>
-          </div>
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {/* Left: Account Summary */}
+    <div>
+      <AccountSummary 
+        balance={balance} 
+        maintenanceDue={maintenanceDue} 
+        nextPaymentDate={nextPaymentDate} 
+      />
+    </div>
+    
+    {/* Right: Recent Tickets */}
+    <div className="group relative overflow-hidden rounded-2xl backdrop-blur-md bg-gradient-to-br from-white/20 via-white/10 to-white/5 border border-white/20 shadow-xl hover:shadow-3xl transition-all duration-500">
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-purple-300/5 to-indigo-500/10"></div>
+      <div className="relative">
+        <div className="flex items-center justify-between p-8 pb-4">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent">
+            Recent Tickets
+          </h2>
+          <a 
+            href="/portal/tickets" 
+            className="inline-flex items-center px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold text-sm hover:from-purple-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+          >
+            See all tickets
+          </a>
+        </div>
+        <div className="px-8 pb-8">
+          <TicketList tickets={latestTickets} />
         </div>
       </div>
-      {/* FAB for tickets */}
+    </div>
+  </div>
+</div>
+// Update the FAB (Floating Action Button):
+<button
+  className="fixed bottom-8 right-8 z-50 w-16 h-16 rounded-full bg-gradient-to-r from-[#01303F] to-[#014a5f] text-white flex items-center justify-center shadow-2xl hover:shadow-3xl hover:scale-110 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#01303F]/30 group"
+  aria-label="Create Ticket"
+  onClick={() => setShowTicketModal(true)}
+>
+  <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
+</button>
+// Update the Modal wrapper:
+{showTicketModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="relative animate-in fade-in-0 zoom-in-95 duration-300">
       <button
-        className="fixed bottom-8 right-8 z-50 w-16 h-16 rounded-full bg-qwerty text-white flex items-center justify-center shadow-2xl hover:bg-qwerty-light transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-qwerty/30"
-        aria-label="Create Ticket"
-        onClick={() => setShowTicketModal(true)}
+        className="absolute -top-4 -right-4 w-8 h-8 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white flex items-center justify-center text-lg font-bold hover:scale-110 transition-all duration-300 focus:outline-none shadow-lg z-10"
+        onClick={() => setShowTicketModal(false)}
+        aria-label="Close Ticket Form"
       >
-        <Plus className="w-8 h-8" />
+        ×
       </button>
-      {/* Ticket Modal */}
-      {showTicketModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 relative animate-fade-in">
-            <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-black text-2xl font-bold focus:outline-none"
-              onClick={() => setShowTicketModal(false)}
-              aria-label="Close Ticket Form"
-            >
-              &times;
-            </button>
-            <TicketForm
-              onSubmit={handleSubmit}
-              loading={formLoading}
-              error={formError}
-              success={formSuccess}
-              form={form}
-              onChange={handleChange}
-              onFileChange={handleFileChange}
-            />
-          </div>
-        </div>
-      )}
+      <div className="max-w-lg w-full mx-4">
+        <TicketForm
+          onSubmit={handleSubmit}
+          loading={formLoading}
+          error={formError}
+          success={formSuccess}
+          form={form}
+          onChange={handleChange}
+          onFileChange={handleFileChange}
+        />
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

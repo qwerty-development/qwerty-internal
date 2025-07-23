@@ -1,3 +1,4 @@
+'use client'
 import React from "react";
 import {
   FileText,
@@ -30,20 +31,20 @@ const TicketList: React.FC<Props> = ({ tickets }) => {
       case "approved":
         return {
           className:
-            "bg-success-100 text-success-700 border border-success-200",
+            "bg-green-100 text-green-800 border border-green-200",
           icon: CheckCircle,
           label: "Approved",
         };
       case "declined":
         return {
-          className: "bg-error-100 text-error-700 border border-error-200",
+          className: "bg-red-100 text-red-800 border border-red-200",
           icon: XCircle,
           label: "Declined",
         };
       default:
         return {
           className:
-            "bg-warning-100 text-warning-700 border border-warning-200",
+            "bg-yellow-100 text-yellow-800 border border-yellow-200",
           icon: Clock,
           label: "Pending",
         };
