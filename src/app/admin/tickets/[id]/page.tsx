@@ -21,9 +21,9 @@ interface Ticket {
   file_url: string | null;
   status: "pending" | "approved" | "declined";
   created_at: string;
-  client: {
+  clients: {
     name: string;
-    email: string;
+    contact_email: string;
   };
   viewed: boolean;
 }
@@ -54,7 +54,7 @@ export default function TicketDetailPage() {
         .select(
           `
           *,
-          client:clients(name, email)
+          clients(name, contact_email)
         `
         )
         .eq("id", params.id)
@@ -62,13 +62,14 @@ export default function TicketDetailPage() {
 
       if (error) throw error;
 
-      if (data) {
-        setTicket(data);
-        // Mark ticket as viewed if it hasn't been viewed yet
-        if (!data.viewed) {
-          await markAsViewed(data.id);
+              if (data) {
+          setTicket(data);
+          // Mark ticket as viewed if it hasn't been viewed yet
+          // Check if viewed field exists to avoid errors during migration
+          if (data.viewed === false) {
+            await markAsViewed(data.id);
+          }
         }
-      }
     } catch (err) {
       console.error("Error fetching ticket:", err);
       setError("Failed to load ticket details");
@@ -84,7 +85,11 @@ export default function TicketDetailPage() {
         .update({ viewed: true })
         .eq("id", ticketId);
 
-      if (error) throw error;
+      if (error) {
+        // If the viewed field doesn't exist yet, just log it and continue
+        console.warn('Could not mark ticket as viewed (field may not exist yet):', error);
+        return;
+      }
     } catch (err) {
       console.error("Error marking ticket as viewed:", err);
     }
@@ -237,9 +242,9 @@ export default function TicketDetailPage() {
                 <User className="w-4 h-4 text-gray-400 mr-2" />
                 <div>
                   <p className="font-medium text-gray-900">
-                    {ticket.client.name}
+                    {ticket.clients.name}
                   </p>
-                  <p className="text-sm text-gray-600">{ticket.client.email}</p>
+                  <p className="text-sm text-gray-600">{ticket.clients.contact_email}</p>
                 </div>
               </div>
             </div>

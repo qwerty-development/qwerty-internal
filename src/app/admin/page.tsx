@@ -129,7 +129,8 @@ export default function HomePage() {
       const totalTickets = tickets?.length || 0;
       const pendingTickets =
         tickets?.filter((t) => t.status === "pending").length || 0;
-      const unviewedTickets = tickets?.filter((t) => !t.viewed).length || 0;
+      const unviewedTickets =
+        tickets?.filter((t) => t.viewed === false).length || 0;
 
       setStats({
         totalClients,

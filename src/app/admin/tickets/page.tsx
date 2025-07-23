@@ -406,7 +406,7 @@ export default function AdminTicketsPage() {
                       <td className="px-6 py-4">
                         <div className="max-w-xs">
                           <div className="font-medium text-gray-900 truncate flex items-center">
-                            {!ticket.viewed && (
+                            {ticket.viewed === false && (
                               <div className="w-2 h-2 bg-red-500 rounded-full mr-2 flex-shrink-0" title="New ticket"></div>
                             )}
                             {ticket.title}
