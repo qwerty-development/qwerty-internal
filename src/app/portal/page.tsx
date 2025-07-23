@@ -143,23 +143,42 @@ export default function Dashboard() {
     fetchTickets();
   }, [formSuccess]);
 
-  // Fetch invoices for the authenticated user
+  // Fetch invoices for the signed-in client only
   useEffect(() => {
-    const fetchInvoices = async () => {
-      const { data, error } = await supabase
+    const fetchClientAndInvoices = async () => {
+      if (!user?.id) return;
+
+      // 1. Fetch the client record for this user
+      const { data: client, error: clientError } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (clientError || !client) {
+        setInvoices([]);
+        setBalance(0);
+        setMaintenanceDue(0);
+        setNextPaymentDate("");
+        return;
+      }
+
+      // 2. Fetch invoices for this client
+      const { data: invoiceData, error: invoiceError } = await supabase
         .from("invoices")
         .select("id, client_id, quotation_id, invoice_number, issue_date, due_date, description, total_amount, amount_paid, balance_due, status, created_by, created_at, updated_at")
+        .eq("client_id", client.id)
         .order("due_date", { ascending: true });
-      
-      if (!error && data) {
-        setInvoices(data as Invoice[]);
-        
+
+      if (!invoiceError && invoiceData) {
+        setInvoices(invoiceData as Invoice[]);
+
         // Calculate account summary data
-        const unpaidInvoices = data.filter((invoice: Invoice) => invoice.status !== "paid");
+        const unpaidInvoices = invoiceData.filter((invoice: Invoice) => invoice.status !== "paid");
         const totalBalance = unpaidInvoices.reduce((sum: number, invoice: Invoice) => sum + invoice.total_amount, 0);
-        
+
         setBalance(totalBalance);
-        
+
         if (unpaidInvoices.length > 0) {
           const nextInvoice = unpaidInvoices[0];
           setNextPaymentDate(nextInvoice.due_date);
@@ -168,11 +187,18 @@ export default function Dashboard() {
           setNextPaymentDate("");
           setMaintenanceDue(0);
         }
+      } else {
+        setInvoices([]);
+        setBalance(0);
+        setMaintenanceDue(0);
+        setNextPaymentDate("");
       }
     };
-    
-    fetchInvoices();
-  }, []);
+
+    if (user?.id) {
+      fetchClientAndInvoices();
+    }
+  }, [user]);
 
   // Fetch latest updates (global, not user-specific)
   useEffect(() => {
@@ -234,11 +260,24 @@ export default function Dashboard() {
         fileUrl = urlData.publicUrl;
       }
       
-      // Insert ticket into database
+      // Fetch the client record for this user
+      const { data: client, error: clientError } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+      if (clientError || !client) {
+        setFormError("Could not find your client record.");
+        setFormLoading(false);
+        return;
+      }
+      // Insert ticket into database with user_id and client_id
       const { error: insertError } = await supabase
         .from("tickets")
         .insert([
           {
+            user_id: user.id,
+            client_id: client.id,
             title: form.title,
             description: form.description,
             page: form.page,
