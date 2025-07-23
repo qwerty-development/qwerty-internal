@@ -14,7 +14,7 @@ export default function InvoiceListPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Sorting state
-  const [sortField, setSortField] = useState<string>("created_at");
+  const [sortField, setSortField] = useState<string>("invoice_number");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Function to fetch invoice data
@@ -56,9 +56,9 @@ export default function InvoiceListPage() {
       // If clicking the same field, toggle direction
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      // If clicking a new field, set it as sort field and default to asc
+      // If clicking a new field, set it as sort field and default to desc
       setSortField(field);
-      setSortDirection("asc");
+      setSortDirection("desc");
     }
   };
 
@@ -157,10 +157,10 @@ export default function InvoiceListPage() {
                 {invoices.length === 1 ? "invoice" : "invoices"})
               </span>
             )}
-            {sortField !== "created_at" && (
+            {sortField !== "invoice_number" && (
               <span className="ml-2 text-sm text-gray-500">
                 • Sorted by {sortField.replace("_", " ")} (
-                {sortDirection === "asc" ? "A-Z" : "Z-A"})
+                {sortDirection === "asc" ? "ascending" : "descending"})
               </span>
             )}
           </p>
