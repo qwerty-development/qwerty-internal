@@ -11,6 +11,7 @@ import {
   Zap,
   BarChart3,
   RefreshCw,
+  Quote,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -37,6 +38,12 @@ export default function HomePage() {
     totalTickets: 0,
     pendingTickets: 0,
     unviewedTickets: 0,
+    totalQuotations: 0,
+    draftQuotations: 0,
+    sentQuotations: 0,
+    approvedQuotations: 0,
+    rejectedQuotations: 0,
+    convertedQuotations: 0,
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -87,11 +94,17 @@ export default function HomePage() {
         .from("receipts")
         .select("amount");
 
-      if (clientsError || invoicesError || receiptsError) {
+      // Fetch all quotations
+      const { data: quotations, error: quotationsError } = await supabase
+        .from("quotations")
+        .select("status, total_amount, is_converted");
+
+      if (clientsError || invoicesError || receiptsError || quotationsError) {
         console.error("Error fetching dashboard data:", {
           clientsError,
           invoicesError,
           receiptsError,
+          quotationsError,
         });
         return;
       }
@@ -100,6 +113,7 @@ export default function HomePage() {
       const totalClients = clients?.length || 0;
       const totalInvoices = invoices?.length || 0;
       const totalReceipts = receipts?.length || 0;
+      const totalQuotations = quotations?.length || 0;
 
       // Calculate outstanding amount (sum of all client regular_balance)
       const totalOutstanding =
@@ -120,6 +134,18 @@ export default function HomePage() {
         invoices?.filter((inv) => inv.status === "unpaid").length || 0;
       const partiallyPaid =
         invoices?.filter((inv) => inv.status === "partially_paid").length || 0;
+
+      // Calculate quotation status counts
+      const draftQuotations =
+        quotations?.filter((q) => q.status === "Draft").length || 0;
+      const sentQuotations =
+        quotations?.filter((q) => q.status === "Sent").length || 0;
+      const approvedQuotations =
+        quotations?.filter((q) => q.status === "Approved").length || 0;
+      const rejectedQuotations =
+        quotations?.filter((q) => q.status === "Rejected").length || 0;
+      const convertedQuotations =
+        quotations?.filter((q) => q.is_converted === true).length || 0;
 
       // Fetch ticket statistics
       const { data: tickets } = await supabase
@@ -144,6 +170,12 @@ export default function HomePage() {
         totalTickets,
         pendingTickets,
         unviewedTickets,
+        totalQuotations,
+        draftQuotations,
+        sentQuotations,
+        approvedQuotations,
+        rejectedQuotations,
+        convertedQuotations,
       });
 
       setLastUpdated(new Date());
@@ -290,6 +322,13 @@ export default function HomePage() {
                 <FileText className="w-5 h-5 mr-2" />
                 Invoices
               </Link>
+              <Link
+                href="/admin/quotations"
+                className="inline-flex items-center px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-xl hover:bg-white/10 transition-all duration-200 transform hover:scale-105"
+              >
+                <Quote className="w-5 h-5 mr-2" />
+                Quotations
+              </Link>
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
@@ -410,6 +449,31 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 transform hover:scale-105 transition-all duration-200">
+            <div className="flex items-center">
+              <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl">
+                <Quote className="w-6 h-6 text-white" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Quotations</p>
+                {loading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <div>
+                    <p className="text-3xl font-bold text-[#01303F]">
+                      {stats.totalQuotations}
+                    </p>
+                    {stats.sentQuotations > 0 && (
+                      <p className="text-sm text-blue-600 font-medium">
+                        {stats.sentQuotations} sent
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -469,6 +533,21 @@ export default function HomePage() {
               </Link>
 
               <Link
+                href="/admin/quotations/new"
+                className="flex items-center p-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg"
+              >
+                <div className="p-2 bg-white/20 rounded-lg mr-4">
+                  <Quote className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-semibold">Create New Quotation</p>
+                  <p className="text-sm text-cyan-100">
+                    Generate a quotation for a client
+                  </p>
+                </div>
+              </Link>
+
+              <Link
                 href="/admin/clients"
                 className="flex items-center p-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-xl hover:from-slate-700 hover:to-slate-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
               >
@@ -494,6 +573,21 @@ export default function HomePage() {
                   <p className="font-semibold">View All Invoices</p>
                   <p className="text-sm text-blue-200">
                     Track payments and balances
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                href="/admin/quotations"
+                className="flex items-center p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-indigo-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
+              >
+                <div className="p-2 bg-white/20 rounded-lg mr-4">
+                  <Quote className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-semibold">View All Quotations</p>
+                  <p className="text-sm text-indigo-200">
+                    Manage quotations and track status
                   </p>
                 </div>
               </Link>
@@ -604,6 +698,78 @@ export default function HomePage() {
                   </span>
                 )}
               </div>
+
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl border border-cyan-100">
+                <div className="flex items-center">
+                  <div className="p-2 bg-cyan-500 rounded-lg mr-3">
+                    <Quote className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Draft Quotations
+                  </span>
+                </div>
+                {loading ? (
+                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  <span className="text-lg font-bold text-[#01303F]">
+                    {stats.draftQuotations}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-500 rounded-lg mr-3">
+                    <Quote className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Sent Quotations
+                  </span>
+                </div>
+                {loading ? (
+                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  <span className="text-lg font-bold text-[#01303F]">
+                    {stats.sentQuotations}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-500 rounded-lg mr-3">
+                    <CheckCircle className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Approved Quotations
+                  </span>
+                </div>
+                {loading ? (
+                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  <span className="text-lg font-bold text-[#01303F]">
+                    {stats.approvedQuotations}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+                <div className="flex items-center">
+                  <div className="p-2 bg-purple-500 rounded-lg mr-3">
+                    <FileText className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Converted Quotations
+                  </span>
+                </div>
+                {loading ? (
+                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  <span className="text-lg font-bold text-[#01303F]">
+                    {stats.convertedQuotations}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -615,9 +781,9 @@ export default function HomePage() {
               Welcome to QWERTY Internal Management
             </h3>
             <p className="text-lg text-blue-100 max-w-2xl mx-auto">
-              Your comprehensive solution for managing clients, invoices, and
-              financial tracking. Everything is designed to help you stay
-              organized and focused on growing your business.
+              Your comprehensive solution for managing clients, invoices,
+              quotations, and financial tracking. Everything is designed to help
+              you stay organized and focused on growing your business.
             </p>
           </div>
         </div>
