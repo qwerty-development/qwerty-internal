@@ -1,5 +1,12 @@
 import React from "react";
-import { FileText, Calendar, CheckCircle, Clock, XCircle, Download } from "lucide-react";
+import {
+  FileText,
+  Calendar,
+  CheckCircle,
+  Clock,
+  XCircle,
+  Download,
+} from "lucide-react";
 
 interface Ticket {
   id: string;
@@ -10,6 +17,7 @@ interface Ticket {
   file_url: string | null;
   status: string;
   created_at: string;
+  viewed: boolean;
 }
 
 interface Props {
@@ -21,21 +29,23 @@ const TicketList: React.FC<Props> = ({ tickets }) => {
     switch (status) {
       case "approved":
         return {
-          className: "bg-success-100 text-success-700 border border-success-200",
+          className:
+            "bg-success-100 text-success-700 border border-success-200",
           icon: CheckCircle,
-          label: "Approved"
+          label: "Approved",
         };
       case "declined":
         return {
           className: "bg-error-100 text-error-700 border border-error-200",
           icon: XCircle,
-          label: "Declined"
+          label: "Declined",
         };
       default:
         return {
-          className: "bg-warning-100 text-warning-700 border border-warning-200",
+          className:
+            "bg-warning-100 text-warning-700 border border-warning-200",
           icon: Clock,
-          label: "Pending"
+          label: "Pending",
         };
     }
   };
@@ -52,7 +62,7 @@ const TicketList: React.FC<Props> = ({ tickets }) => {
             <FileText className="w-6 h-6 text-white" />
           </div>
         </div>
-        
+
         {tickets.length === 0 ? (
           <div className="text-center py-8 text-secondary-500">
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -60,33 +70,37 @@ const TicketList: React.FC<Props> = ({ tickets }) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {tickets.map(ticket => {
+            {tickets.map((ticket) => {
               const statusConfig = getStatusConfig(ticket.status);
               const StatusIcon = statusConfig.icon;
-              
+
               return (
-                <div 
-                  key={ticket.id} 
+                <div
+                  key={ticket.id}
                   className="p-6 rounded-xl bg-white/10 backdrop-blur border border-white/20 hover:bg-white/20 transition-all duration-300 group/item"
                 >
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="font-semibold text-lg text-secondary-800 group-hover/item:text-primary-600 transition-colors">
                       {ticket.title}
                     </h3>
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusConfig.className}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-semibold ${statusConfig.className}`}
+                    >
                       <div className="flex items-center gap-1">
                         <StatusIcon className="w-4 h-4" />
                         {statusConfig.label}
                       </div>
                     </span>
                   </div>
-                  
-                  <p className="text-secondary-700 mb-3 line-clamp-2">{ticket.description}</p>
-                  
+
+                  <p className="text-secondary-700 mb-3 line-clamp-2">
+                    {ticket.description}
+                  </p>
+
                   <div className="text-sm text-secondary-600 mb-3">
                     <span className="font-medium">Page:</span> {ticket.page}
                   </div>
-                  
+
                   {ticket.file_url && (
                     <div className="mb-3">
                       <a
@@ -100,7 +114,7 @@ const TicketList: React.FC<Props> = ({ tickets }) => {
                       </a>
                     </div>
                   )}
-                  
+
                   <div className="text-xs text-secondary-400 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     Created: {new Date(ticket.created_at).toLocaleString()}

@@ -26,6 +26,7 @@ interface Ticket {
   file_url: string | null;
   status: string;
   created_at: string;
+  viewed: boolean;
   clients: {
     id: string;
     name: string;
@@ -72,6 +73,7 @@ export default function AdminTicketsPage() {
           file_url,
           status,
           created_at,
+          viewed,
           clients (
             id,
             name,
@@ -403,7 +405,10 @@ export default function AdminTicketsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="max-w-xs">
-                          <div className="font-medium text-gray-900 truncate">
+                          <div className="font-medium text-gray-900 truncate flex items-center">
+                            {!ticket.viewed && (
+                              <div className="w-2 h-2 bg-red-500 rounded-full mr-2 flex-shrink-0" title="New ticket"></div>
+                            )}
                             {ticket.title}
                           </div>
                           <div className="text-sm text-gray-500 line-clamp-2">

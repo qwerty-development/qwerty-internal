@@ -36,6 +36,7 @@ export default function HomePage() {
     partiallyPaid: 0,
     totalTickets: 0,
     pendingTickets: 0,
+    unviewedTickets: 0,
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -121,11 +122,14 @@ export default function HomePage() {
         invoices?.filter((inv) => inv.status === "partially_paid").length || 0;
 
       // Fetch ticket statistics
-      const { data: tickets } = await supabase.from("tickets").select("status");
+      const { data: tickets } = await supabase
+        .from("tickets")
+        .select("status, viewed");
 
       const totalTickets = tickets?.length || 0;
       const pendingTickets =
         tickets?.filter((t) => t.status === "pending").length || 0;
+      const unviewedTickets = tickets?.filter((t) => !t.viewed).length || 0;
 
       setStats({
         totalClients,
@@ -138,6 +142,7 @@ export default function HomePage() {
         partiallyPaid,
         totalTickets,
         pendingTickets,
+        unviewedTickets,
       });
 
       setLastUpdated(new Date());
@@ -494,7 +499,7 @@ export default function HomePage() {
 
               <Link
                 href="/admin/tickets"
-                className="flex items-center p-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                className="flex items-center p-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 transform hover:scale-105 shadow-lg relative"
               >
                 <div className="p-2 bg-white/20 rounded-lg mr-4">
                   <FileText className="w-5 h-5" />
@@ -507,6 +512,11 @@ export default function HomePage() {
                       : "View all tickets"}
                   </p>
                 </div>
+                {stats.unviewedTickets > 0 && (
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                    {stats.unviewedTickets > 9 ? "9+" : stats.unviewedTickets}
+                  </div>
+                )}
               </Link>
             </div>
           </div>
