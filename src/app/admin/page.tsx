@@ -34,6 +34,8 @@ export default function HomePage() {
     fullyPaidInvoices: 0,
     pendingPayments: 0,
     partiallyPaid: 0,
+    totalTickets: 0,
+    pendingTickets: 0,
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -118,6 +120,13 @@ export default function HomePage() {
       const partiallyPaid =
         invoices?.filter((inv) => inv.status === "partially_paid").length || 0;
 
+      // Fetch ticket statistics
+      const { data: tickets } = await supabase.from("tickets").select("status");
+
+      const totalTickets = tickets?.length || 0;
+      const pendingTickets =
+        tickets?.filter((t) => t.status === "pending").length || 0;
+
       setStats({
         totalClients,
         totalInvoices,
@@ -127,6 +136,8 @@ export default function HomePage() {
         fullyPaidInvoices,
         pendingPayments,
         partiallyPaid,
+        totalTickets,
+        pendingTickets,
       });
 
       setLastUpdated(new Date());
@@ -351,6 +362,31 @@ export default function HomePage() {
 
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 transform hover:scale-105 transition-all duration-200">
             <div className="flex items-center">
+              <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Tickets</p>
+                {loading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <div>
+                    <p className="text-3xl font-bold text-[#01303F]">
+                      {stats.totalTickets}
+                    </p>
+                    {stats.pendingTickets > 0 && (
+                      <p className="text-sm text-orange-600 font-medium">
+                        {stats.pendingTickets} pending
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 transform hover:scale-105 transition-all duration-200">
+            <div className="flex items-center">
               <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl">
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
@@ -452,6 +488,23 @@ export default function HomePage() {
                   <p className="font-semibold">View All Invoices</p>
                   <p className="text-sm text-blue-200">
                     Track payments and balances
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                href="/admin/tickets"
+                className="flex items-center p-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
+              >
+                <div className="p-2 bg-white/20 rounded-lg mr-4">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-semibold">Manage Tickets</p>
+                  <p className="text-sm text-purple-200">
+                    {stats.pendingTickets > 0
+                      ? `${stats.pendingTickets} pending tickets`
+                      : "View all tickets"}
                   </p>
                 </div>
               </Link>
