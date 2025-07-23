@@ -88,11 +88,6 @@ export default function AdminTicketsPage() {
       } else {
         setTickets(data || []);
 
-        // Debug: Log the first ticket to see what fields we have
-        if (data && data.length > 0) {
-          console.log("First ticket data:", data[0]);
-        }
-
         // Calculate statistics
         const total = data?.length || 0;
         const pending = data?.filter((t) => t.status === "pending").length || 0;
@@ -415,18 +410,14 @@ export default function AdminTicketsPage() {
                               ticket.viewed === null ||
                               ticket.viewed === undefined) && (
                               <div
-                                className="w-3 h-3 bg-red-500 rounded-full mr-2 flex-shrink-0 animate-pulse"
-                                title={`New ticket (viewed: ${ticket.viewed})`}
+                                className="w-2 h-2 bg-red-500 rounded-full mr-2 flex-shrink-0"
+                                title="New ticket"
                               ></div>
                             )}
                             {ticket.title}
                           </div>
                           <div className="text-sm text-gray-500 line-clamp-2">
                             {ticket.description}
-                          </div>
-                          {/* Debug: Show viewed status */}
-                          <div className="text-xs text-gray-400 mt-1">
-                            Viewed: {String(ticket.viewed)} (Type: {typeof ticket.viewed})
                           </div>
                         </div>
                       </td>
