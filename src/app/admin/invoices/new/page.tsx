@@ -3,8 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { createInvoice } from "@/utils/invoiceCreation";
 import Link from "next/link";
+
+interface InvoiceItem {
+  title: string;
+  description: string;
+  price: number;
+}
 
 export default function CreateInvoicePage() {
   const router = useRouter();
@@ -20,10 +25,17 @@ export default function CreateInvoicePage() {
       .toISOString()
       .split("T")[0],
     description: "",
-    total_amount: "",
   });
+
+  const [items, setItems] = useState<InvoiceItem[]>([
+    { title: "", description: "", price: 0 },
+  ]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Calculate total amount from items
+  const totalAmount = items.reduce((sum, item) => sum + (item.price || 0), 0);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -34,10 +46,6 @@ export default function CreateInvoicePage() {
 
     if (!formData.description.trim()) {
       newErrors.description = "Description is required";
-    }
-
-    if (!formData.total_amount || parseFloat(formData.total_amount) <= 0) {
-      newErrors.total_amount = "Please enter a valid amount greater than 0";
     }
 
     if (!formData.issue_date) {
@@ -55,6 +63,20 @@ export default function CreateInvoicePage() {
     ) {
       newErrors.due_date = "Due date must be after issue date";
     }
+
+    // Validate items
+    if (items.length === 0) {
+      newErrors.items = "At least one item is required";
+    }
+
+    items.forEach((item, index) => {
+      if (!item.title.trim()) {
+        newErrors[`item_${index}_title`] = "Item title is required";
+      }
+      if (item.price < 0) {
+        newErrors[`item_${index}_price`] = "Price cannot be negative";
+      }
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -97,13 +119,21 @@ export default function CreateInvoicePage() {
     setIsSubmitting(true);
 
     try {
-      const result = await createInvoice({
-        client_id: formData.client_id,
-        issue_date: formData.issue_date,
-        due_date: formData.due_date,
-        description: formData.description.trim(),
-        total_amount: parseFloat(formData.total_amount),
+      const response = await fetch("/api/invoices", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          client_id: formData.client_id,
+          issue_date: formData.issue_date,
+          due_date: formData.due_date,
+          description: formData.description.trim(),
+          items: items.filter((item) => item.title.trim()), // Only include items with titles
+        }),
       });
+
+      const result = await response.json();
 
       if (result.success) {
         router.push("/admin/invoices");
@@ -132,6 +162,43 @@ export default function CreateInvoicePage() {
     }
   };
 
+  const handleItemChange = (
+    index: number,
+    field: keyof InvoiceItem,
+    value: string | number
+  ) => {
+    setItems((prev) => {
+      const newItems = [...prev];
+      newItems[index] = { ...newItems[index], [field]: value };
+      return newItems;
+    });
+
+    // Clear item errors
+    const errorKey = `item_${index}_${field}`;
+    if (errors[errorKey]) {
+      setErrors((prev) => ({ ...prev, [errorKey]: "" }));
+    }
+    if (errors.items) {
+      setErrors((prev) => ({ ...prev, items: "" }));
+    }
+  };
+
+  const addItem = () => {
+    setItems((prev) => [...prev, { title: "", description: "", price: 0 }]);
+  };
+
+  const removeItem = (index: number) => {
+    if (items.length > 1) {
+      setItems((prev) => prev.filter((_, i) => i !== index));
+
+      // Clear related errors
+      const newErrors = { ...errors };
+      delete newErrors[`item_${index}_title`];
+      delete newErrors[`item_${index}_price`];
+      setErrors(newErrors);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto">
@@ -143,7 +210,7 @@ export default function CreateInvoicePage() {
     );
   }
 
-  if (error) {
+  if (error && !clients.length) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="text-center py-12">
@@ -283,34 +350,136 @@ export default function CreateInvoicePage() {
             )}
           </div>
 
+          {/* Items Section */}
           <div>
-            <label
-              htmlFor="totalAmount"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Total Amount *
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                $
-              </span>
-              <input
-                type="number"
-                id="total_amount"
-                name="total_amount"
-                value={formData.total_amount}
-                onChange={handleChange}
-                step="0.01"
-                min="0"
-                className={`w-full pl-8 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.total_amount ? "border-red-300" : "border-gray-300"
-                }`}
-                placeholder="0.00"
-              />
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm font-medium text-gray-700">
+                Invoice Items *
+              </label>
+              <button
+                type="button"
+                onClick={addItem}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                + Add Item
+              </button>
             </div>
-            {errors.total_amount && (
-              <p className="mt-1 text-sm text-red-600">{errors.total_amount}</p>
+
+            {errors.items && (
+              <p className="mb-3 text-sm text-red-600">{errors.items}</p>
             )}
+
+            <div className="space-y-4">
+              {items.map((item, index) => (
+                <div
+                  key={index}
+                  className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-gray-700">
+                      Item #{index + 1}
+                    </h4>
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeItem(index)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Title *
+                      </label>
+                      <input
+                        type="text"
+                        value={item.title}
+                        onChange={(e) =>
+                          handleItemChange(index, "title", e.target.value)
+                        }
+                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                          errors[`item_${index}_title`]
+                            ? "border-red-300"
+                            : "border-gray-300"
+                        }`}
+                        placeholder="Enter item title"
+                      />
+                      {errors[`item_${index}_title`] && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {errors[`item_${index}_title`]}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Price *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 text-sm">
+                          $
+                        </span>
+                        <input
+                          type="number"
+                          value={item.price}
+                          onChange={(e) =>
+                            handleItemChange(
+                              index,
+                              "price",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          step="0.01"
+                          min="0"
+                          className={`w-full pl-8 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                            errors[`item_${index}_price`]
+                              ? "border-red-300"
+                              : "border-gray-300"
+                          }`}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      {errors[`item_${index}_price`] && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {errors[`item_${index}_price`]}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      value={item.description}
+                      onChange={(e) =>
+                        handleItemChange(index, "description", e.target.value)
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Optional item description"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Total Amount Display */}
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">
+                  Total Amount:
+                </span>
+                <span className="text-lg font-bold text-blue-600">
+                  ${totalAmount.toFixed(2)}
+                </span>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end space-x-4 pt-6 border-t">

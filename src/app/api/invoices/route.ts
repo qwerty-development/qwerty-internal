@@ -16,12 +16,19 @@ const createServiceClient = () => {
   return createClient(supabaseUrl, supabaseServiceKey);
 };
 
+interface InvoiceItemData {
+  title: string;
+  description?: string;
+  price: number;
+}
+
 interface InvoiceData {
   client_id: string;
   issue_date: string;
   due_date: string;
   description: string;
-  total_amount: number;
+  total_amount?: number;
+  items?: InvoiceItemData[];
   created_by?: string;
 }
 
@@ -87,11 +94,51 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!invoiceData.total_amount || invoiceData.total_amount <= 0) {
-      return NextResponse.json(
-        { success: false, error: "Total amount must be greater than 0" },
-        { status: 400 }
+    // Determine if using items system
+    const usingItems = invoiceData.items && invoiceData.items.length > 0;
+    let totalAmount = 0;
+
+    if (usingItems) {
+      // Validate items
+      if (!Array.isArray(invoiceData.items) || invoiceData.items.length === 0) {
+        return NextResponse.json(
+          { success: false, error: "At least one item is required" },
+          { status: 400 }
+        );
+      }
+
+      for (const item of invoiceData.items) {
+        if (!item.title?.trim()) {
+          return NextResponse.json(
+            { success: false, error: "Item title is required" },
+            { status: 400 }
+          );
+        }
+        if (typeof item.price !== "number" || item.price < 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Item price must be a non-negative number",
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Calculate total from items
+      totalAmount = invoiceData.items.reduce(
+        (sum, item) => sum + item.price,
+        0
       );
+    } else {
+      // Use provided total amount (legacy system)
+      if (!invoiceData.total_amount || invoiceData.total_amount <= 0) {
+        return NextResponse.json(
+          { success: false, error: "Total amount must be greater than 0" },
+          { status: 400 }
+        );
+      }
+      totalAmount = invoiceData.total_amount;
     }
 
     // Verify client exists
@@ -120,10 +167,11 @@ export async function POST(request: NextRequest) {
         issue_date: invoiceData.issue_date,
         due_date: invoiceData.due_date,
         description: invoiceData.description.trim(),
-        total_amount: invoiceData.total_amount,
+        total_amount: totalAmount,
         amount_paid: 0,
-        balance_due: invoiceData.total_amount,
+        balance_due: totalAmount,
         status: "unpaid",
+        uses_items: usingItems,
         created_by: session.user.id,
       })
       .select()
@@ -139,8 +187,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If using items, create invoice items
+    if (usingItems && invoiceData.items) {
+      const itemsToInsert = invoiceData.items.map((item, index) => ({
+        invoice_id: invoiceRecord.id,
+        position: index + 1,
+        title: item.title.trim(),
+        description: item.description?.trim() || null,
+        price: item.price,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("invoice_items")
+        .insert(itemsToInsert);
+
+      if (itemsError) {
+        // Rollback: delete the invoice
+        await supabase.from("invoices").delete().eq("id", invoiceRecord.id);
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Failed to create invoice items: ${itemsError.message}`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Update client's regular balance
-    const newBalance = (client.regular_balance || 0) + invoiceData.total_amount;
+    const newBalance = (client.regular_balance || 0) + totalAmount;
     const { error: updateError } = await supabase
       .from("clients")
       .update({

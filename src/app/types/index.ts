@@ -8,6 +8,14 @@ export interface Client {
   paidAmount: number;
 }
 
+export interface InvoiceItem {
+  id?: string;
+  position: number;
+  title: string;
+  description?: string;
+  price: number;
+}
+
 export interface Invoice {
   id: string;
   clientId: string;
@@ -19,6 +27,8 @@ export interface Invoice {
   amountPaid: number;
   balanceDue: number;
   status: "Unpaid" | "Partially Paid" | "Paid";
+  usesItems?: boolean;
+  items?: InvoiceItem[];
 }
 
 export interface Receipt {
