@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-// GET /api/quotations/[id]/items - Fetch quotation items
+// GET /api/quotations/[id] - Fetch quotation details
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -41,24 +41,24 @@ export async function GET(
 
     const quotationId = params.id;
 
-    // Fetch quotation items ordered by position
-    const { data: items, error } = await supabase
-      .from("quotation_items")
+    // Fetch quotation details
+    const { data: quotation, error } = await supabase
+      .from("quotations")
       .select("*")
-      .eq("quotation_id", quotationId)
-      .order("position", { ascending: true });
+      .eq("id", quotationId)
+      .single();
 
     if (error) {
-      console.error("Error fetching quotation items:", error);
+      console.error("Error fetching quotation:", error);
       return NextResponse.json(
-        { error: "Failed to fetch quotation items" },
-        { status: 500 }
+        { error: "Quotation not found" },
+        { status: 404 }
       );
     }
 
-    return NextResponse.json(items || []);
+    return NextResponse.json(quotation);
   } catch (error) {
-    console.error("Error in GET /api/quotations/[id]/items:", error);
+    console.error("Error in GET /api/quotations/[id]:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -66,8 +66,8 @@ export async function GET(
   }
 }
 
-// POST /api/quotations/[id]/items - Update quotation items (replaces all items)
-export async function POST(
+// PUT /api/quotations/[id] - Update quotation details
+export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -104,91 +104,74 @@ export async function POST(
     }
 
     const quotationId = params.id;
-    const items = await request.json();
+    const updateData = await request.json();
 
-    // Validate items array
-    if (!Array.isArray(items)) {
+    // Validate required fields
+    if (!updateData.clientName?.trim()) {
       return NextResponse.json(
-        { error: "Items must be an array" },
+        { error: "Client name is required" },
         { status: 400 }
       );
     }
 
-    // Validate each item
-    for (const item of items) {
-      if (!item.title || typeof item.price !== "number" || item.price < 0) {
-        return NextResponse.json(
-          { error: "Each item must have a title and non-negative price" },
-          { status: 400 }
-        );
-      }
+    if (!updateData.description?.trim()) {
+      return NextResponse.json(
+        { error: "Description is required" },
+        { status: 400 }
+      );
     }
 
-    // Start a transaction
-    const { data: quotation, error: quotationError } = await supabase
+    if (!updateData.quotationIssueDate) {
+      return NextResponse.json(
+        { error: "Issue date is required" },
+        { status: 400 }
+      );
+    }
+
+    // Prepare update data
+    const quotationUpdate = {
+      // Client data
+      client_name: updateData.clientName.trim(),
+      client_email: updateData.clientEmail?.trim() || null,
+      client_phone: updateData.clientPhone?.trim() || null,
+      client_contact_email: updateData.clientContactEmail?.trim() || null,
+      client_contact_phone: updateData.clientContactPhone?.trim() || null,
+      client_address: updateData.clientAddress?.trim() || null,
+      client_notes: updateData.clientNotes?.trim() || null,
+
+      // Quotation data
+      description: updateData.description.trim(),
+      quotation_issue_date: updateData.quotationIssueDate,
+      quotation_due_date: updateData.quotationDueDate || null,
+
+      // Keep the old fields for backward compatibility
+      issue_date: updateData.quotationIssueDate,
+      due_date: updateData.quotationDueDate || null,
+    };
+
+    // Update quotation
+    const { data: updatedQuotation, error } = await supabase
       .from("quotations")
-      .select("uses_items")
+      .update(quotationUpdate)
       .eq("id", quotationId)
+      .select()
       .single();
 
-    if (quotationError || !quotation) {
+    if (error) {
+      console.error("Error updating quotation:", error);
       return NextResponse.json(
-        { error: "Quotation not found" },
-        { status: 404 }
-      );
-    }
-
-    // Delete existing items
-    const { error: deleteError } = await supabase
-      .from("quotation_items")
-      .delete()
-      .eq("quotation_id", quotationId);
-
-    if (deleteError) {
-      console.error("Error deleting existing items:", deleteError);
-      return NextResponse.json(
-        { error: "Failed to update quotation items" },
+        { error: "Failed to update quotation" },
         { status: 500 }
       );
     }
 
-    // Insert new items with positions
-    const itemsToInsert = items.map((item, index) => ({
-      quotation_id: quotationId,
-      position: index + 1,
-      title: item.title.trim(),
-      description: item.description?.trim() || null,
-      price: item.price,
-    }));
-
-    const { data: newItems, error: insertError } = await supabase
-      .from("quotation_items")
-      .insert(itemsToInsert)
-      .select();
-
-    if (insertError) {
-      console.error("Error inserting new items:", insertError);
-      return NextResponse.json(
-        { error: "Failed to update quotation items" },
-        { status: 500 }
-      );
-    }
-
-    // Update quotation to use items system
-    if (!quotation.uses_items) {
-      const { error: updateError } = await supabase
-        .from("quotations")
-        .update({ uses_items: true })
-        .eq("id", quotationId);
-
-      if (updateError) {
-        console.error("Error updating quotation uses_items:", updateError);
-      }
-    }
-
-    return NextResponse.json(newItems);
+    return NextResponse.json({
+      success: true,
+      quotation: updatedQuotation,
+      message: "Quotation updated successfully",
+    });
   } catch (error) {
-    console.error("Error in POST /api/quotations/[id]/items:", error);
+    console.error("Error in PUT /api/quotations/[id]:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
