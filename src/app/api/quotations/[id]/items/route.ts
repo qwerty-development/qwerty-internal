@@ -1,132 +1,97 @@
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { createClient as createServerClient } from "@/utils/supabase/server";
 
-// Create a service role client for admin operations
-const createServiceClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error(
-      `Missing environment variables: URL=${!!supabaseUrl}, ServiceKey=${!!supabaseServiceKey}`
-    );
-  }
-
-  return createClient(supabaseUrl, supabaseServiceKey);
-};
-
-interface QuotationItemData {
-  title: string;
-  description?: string;
-  price: number;
-}
-
-// GET: Fetch all items for a quotation
+// GET /api/quotations/[id]/items - Fetch quotation items
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createServiceClient();
-    const quotationId = params.id;
+    const supabase = createRouteHandlerClient({ cookies });
 
-    // Get the current authenticated user
-    const supabaseServer = await createServerClient();
+    // Check authentication
     const {
       data: { session },
-    } = await supabaseServer.auth.getSession();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required" },
-        { status: 401 }
-      );
+    } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch items for the quotation
+    const quotationId = params.id;
+
+    // Fetch quotation items ordered by position
     const { data: items, error } = await supabase
       .from("quotation_items")
       .select("*")
       .eq("quotation_id", quotationId)
-      .order("position");
+      .order("position", { ascending: true });
 
     if (error) {
+      console.error("Error fetching quotation items:", error);
       return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 400 }
+        { error: "Failed to fetch quotation items" },
+        { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      items: items || [],
-    });
+    return NextResponse.json(items || []);
   } catch (error) {
-    console.error("Error fetching quotation items:", error);
+    console.error("Error in GET /api/quotations/[id]/items:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch quotation items" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
 }
 
-// POST: Add multiple items to a quotation (replaces all existing items)
+// POST /api/quotations/[id]/items - Update quotation items (replaces all items)
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { items }: { items: QuotationItemData[] } = await request.json();
-    const supabase = createServiceClient();
-    const quotationId = params.id;
+    const supabase = createRouteHandlerClient({ cookies });
 
-    // Get the current authenticated user
-    const supabaseServer = await createServerClient();
+    // Check authentication
     const {
       data: { session },
-    } = await supabaseServer.auth.getSession();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required" },
-        { status: 401 }
-      );
+    } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Validate items
-    if (!Array.isArray(items) || items.length === 0) {
+    const quotationId = params.id;
+    const items = await request.json();
+
+    // Validate items array
+    if (!Array.isArray(items)) {
       return NextResponse.json(
-        { success: false, error: "At least one item is required" },
+        { error: "Items must be an array" },
         { status: 400 }
       );
     }
 
+    // Validate each item
     for (const item of items) {
-      if (!item.title?.trim()) {
+      if (!item.title || typeof item.price !== "number" || item.price < 0) {
         return NextResponse.json(
-          { success: false, error: "Item title is required" },
-          { status: 400 }
-        );
-      }
-      if (typeof item.price !== "number" || item.price < 0) {
-        return NextResponse.json(
-          { success: false, error: "Item price must be a non-negative number" },
+          { error: "Each item must have a title and non-negative price" },
           { status: 400 }
         );
       }
     }
 
-    // Verify quotation exists
+    // Start a transaction
     const { data: quotation, error: quotationError } = await supabase
       .from("quotations")
-      .select("id")
+      .select("uses_items")
       .eq("id", quotationId)
       .single();
 
     if (quotationError || !quotation) {
       return NextResponse.json(
-        { success: false, error: "Quotation not found" },
+        { error: "Quotation not found" },
         { status: 404 }
       );
     }
@@ -138,13 +103,14 @@ export async function POST(
       .eq("quotation_id", quotationId);
 
     if (deleteError) {
+      console.error("Error deleting existing items:", deleteError);
       return NextResponse.json(
-        { success: false, error: "Failed to clear existing items" },
-        { status: 400 }
+        { error: "Failed to update quotation items" },
+        { status: 500 }
       );
     }
 
-    // Insert new items with sequential positions
+    // Insert new items with positions
     const itemsToInsert = items.map((item, index) => ({
       quotation_id: quotationId,
       position: index + 1,
@@ -153,37 +119,36 @@ export async function POST(
       price: item.price,
     }));
 
-    const { data: insertedItems, error: insertError } = await supabase
+    const { data: newItems, error: insertError } = await supabase
       .from("quotation_items")
       .insert(itemsToInsert)
       .select();
 
     if (insertError) {
+      console.error("Error inserting new items:", insertError);
       return NextResponse.json(
-        { success: false, error: insertError.message },
-        { status: 400 }
+        { error: "Failed to update quotation items" },
+        { status: 500 }
       );
     }
 
-    // Mark quotation as using items system
-    const { error: updateError } = await supabase
-      .from("quotations")
-      .update({ uses_items: true })
-      .eq("id", quotationId);
+    // Update quotation to use items system
+    if (!quotation.uses_items) {
+      const { error: updateError } = await supabase
+        .from("quotations")
+        .update({ uses_items: true })
+        .eq("id", quotationId);
 
-    if (updateError) {
-      console.error("Failed to update quotation uses_items flag:", updateError);
+      if (updateError) {
+        console.error("Error updating quotation uses_items:", updateError);
+      }
     }
 
-    return NextResponse.json({
-      success: true,
-      items: insertedItems,
-      message: "Quotation items saved successfully!",
-    });
+    return NextResponse.json(newItems);
   } catch (error) {
-    console.error("Error saving quotation items:", error);
+    console.error("Error in POST /api/quotations/[id]/items:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to save quotation items" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

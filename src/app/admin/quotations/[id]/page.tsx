@@ -100,13 +100,17 @@ export default function QuotationDetailPage() {
   const fetchQuotationItems = async () => {
     try {
       const response = await fetch(`/api/quotations/${quotationId}/items`);
-      const result = await response.json();
+      const items = await response.json();
 
-      if (result.success) {
-        setQuotationItems(result.items || []);
+      if (Array.isArray(items)) {
+        setQuotationItems(items);
+      } else {
+        console.error("Invalid response format:", items);
+        setQuotationItems([]);
       }
     } catch (err) {
       console.error("Error fetching quotation items:", err);
+      setQuotationItems([]);
     }
   };
 
@@ -131,27 +135,45 @@ export default function QuotationDetailPage() {
   // Update quotation status
   const updateStatus = async (newStatus: string) => {
     try {
-      const updateData: any = { status: newStatus };
-
       if (newStatus === "Approved") {
-        updateData.approved_at = new Date().toISOString();
-      } else if (newStatus === "Rejected") {
-        updateData.rejected_at = new Date().toISOString();
-      }
+        // Use the new approval API that handles client creation
+        const response = await fetch(`/api/quotations/${quotationId}/approve`, {
+          method: "POST",
+        });
 
-      const { error } = await supabase
-        .from("quotations")
-        .update(updateData)
-        .eq("id", quotationId);
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to approve quotation");
+        }
 
-      if (error) {
-        throw error;
+        const result = await response.json();
+        if (result.success) {
+          alert(
+            "Quotation approved successfully! Client created automatically."
+          );
+        }
+      } else {
+        // Handle other status updates (Rejected, etc.)
+        const updateData: any = { status: newStatus };
+
+        if (newStatus === "Rejected") {
+          updateData.rejected_at = new Date().toISOString();
+        }
+
+        const { error } = await supabase
+          .from("quotations")
+          .update(updateData)
+          .eq("id", quotationId);
+
+        if (error) {
+          throw error;
+        }
       }
 
       fetchQuotation();
     } catch (err) {
       console.error("Error updating status:", err);
-      alert("Failed to update status");
+      alert(err instanceof Error ? err.message : "Failed to update status");
     }
   };
 
@@ -185,50 +207,26 @@ export default function QuotationDetailPage() {
     if (!quotation) return;
 
     try {
-      const invoiceData = {
-        client_id: quotation.client_id,
-        quotation_id: quotation.id,
-        description: quotation.description,
-        total_amount: quotation.total_amount.toString(),
-        issue_date: new Date().toISOString().split("T")[0],
-        due_date:
-          quotation.due_date ||
-          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0],
-      };
-
-      const response = await fetch("/api/invoices", {
+      const response = await fetch(`/api/quotations/${quotationId}/convert`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(invoiceData),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create invoice");
+        const error = await response.json();
+        throw new Error(error.error || "Failed to convert quotation");
       }
 
       const result = await response.json();
 
-      const { error } = await supabase
-        .from("quotations")
-        .update({
-          status: "Converted",
-          is_converted: true,
-          converted_to_invoice_id: result.invoice.id,
-        })
-        .eq("id", quotationId);
-
-      if (error) {
-        throw error;
+      if (result.success) {
+        alert("Quotation converted to invoice successfully!");
+        router.push(`/admin/invoices/${result.invoice.id}`);
       }
-
-      router.push(`/admin/invoices/${result.invoice.id}`);
     } catch (err) {
       console.error("Error converting to invoice:", err);
-      alert("Failed to convert to invoice");
+      alert(
+        err instanceof Error ? err.message : "Failed to convert to invoice"
+      );
     }
   };
 

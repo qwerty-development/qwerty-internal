@@ -43,13 +43,16 @@ export interface Quotation {
   id: string;
   clientId?: string;
   quotationNumber: string;
+
+  // Legacy date fields (for backward compatibility)
   issueDate: string;
   dueDate?: string;
+
   description: string;
   totalAmount: number;
   status: "Draft" | "Sent" | "Approved" | "Rejected" | "Converted";
 
-  // Client data fields
+  // Client data fields (for auto-generation)
   clientName?: string;
   clientEmail?: string;
   clientPhone?: string;
@@ -58,13 +61,17 @@ export interface Quotation {
   clientAddress?: string;
   clientNotes?: string;
 
-  // Quotation-specific fields
+  // Invoice data fields (for auto-generation)
   quotationIssueDate: string;
   quotationDueDate?: string;
+
+  // Approval workflow fields
   approvedAt?: string;
   rejectedAt?: string;
   convertedToInvoiceId?: string;
   isConverted?: boolean;
+
+  // Item-based system
   usesItems?: boolean;
   items?: QuotationItem[];
 
