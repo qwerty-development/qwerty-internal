@@ -178,11 +178,15 @@ export async function POST(request: NextRequest) {
         client_address: quotationData.clientAddress?.trim() || null,
         client_notes: quotationData.clientNotes?.trim() || null,
 
-        // Invoice data
+        // Invoice data - use the new quotation-specific fields
         description: quotationData.description.trim(),
         quotation_issue_date: quotationData.quotationIssueDate,
         quotation_due_date: quotationData.quotationDueDate || null,
         total_amount: totalAmount,
+
+        // Keep the old fields for backward compatibility (set them to the same values)
+        issue_date: quotationData.quotationIssueDate,
+        due_date: quotationData.quotationDueDate || null,
 
         // Quotation-specific
         quotation_number: quotationNumber,
