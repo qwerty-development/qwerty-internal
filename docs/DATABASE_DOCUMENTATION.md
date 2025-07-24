@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides a comprehensive overview of the business management system database. The system manages clients, quotations, invoices, receipts, tickets, and user accounts with a focus on streamlining the quotation-to-invoice workflow. The system now supports both legacy invoices (with manual total amounts) and modern item-based invoices (with auto-calculated totals).
+This document provides a comprehensive overview of the business management system database. The system manages clients, quotations, invoices, receipts, tickets, and user accounts with a focus on streamlining the quotation-to-invoice workflow. The system now supports both legacy and modern item-based systems for both quotations and invoices, with auto-calculated totals and comprehensive client data capture for quotation-to-client-invoice conversion workflow.
 
 ## Database Schema
 
@@ -157,7 +157,7 @@ This document provides a comprehensive overview of the business management syste
 
 ### Table: `quotations`
 
-**Purpose**: Pre-invoice proposals that can be converted to clients and invoices upon approval
+**Purpose**: Pre-invoice proposals that can be converted to clients and invoices upon approval, supporting both legacy and item-based systems
 
 **Primary Key**: `id` (UUID, auto-generated with `gen_random_uuid()`)
 
@@ -169,18 +169,28 @@ This document provides a comprehensive overview of the business management syste
 - `issue_date` (date, NOT NULL) - Date quotation was issued
 - `due_date` (date) - Date quotation expires (optional)
 - `description` (text, NOT NULL) - Detailed description of services/products
-- `total_amount` (numeric, NOT NULL) - Total quotation amount
+- `total_amount` (numeric, NOT NULL) - Total quotation amount (auto-calculated for item-based quotations)
 - `status` (text, DEFAULT 'Draft') - Quotation status: 'Draft', 'Sent', 'Approved', 'Rejected'
 - `pdf_url` (text) - URL to generated PDF quotation
+- `uses_items` (boolean, DEFAULT false) - Whether quotation uses the new item-based system
 - `created_by` (UUID, NOT NULL, FOREIGN KEY) - User who created the quotation
 - `created_at` (timestamp with time zone, DEFAULT now()) - Creation timestamp
 - `updated_at` (timestamp with time zone, DEFAULT now()) - Last update timestamp
 
-**Denormalized Client Data** (for historical preservation):
+**Comprehensive Client Data** (for auto-generation of clients):
 
-- `client_name` (text) - Client name at time of quotation
-- `client_email` (text) - Client email at time of quotation
-- `client_phone` (text) - Client phone at time of quotation
+- `client_name` (text) - Client name for quotation/client creation
+- `client_email` (text) - Client email (legacy field)
+- `client_phone` (text) - Client phone (legacy field)
+- `client_contact_email` (text) - Client contact email (new normalized field)
+- `client_contact_phone` (text) - Client contact phone (new normalized field)
+- `client_address` (text) - Client physical address
+- `client_notes` (text) - Additional client information
+
+**Invoice Data** (for auto-generation of invoices):
+
+- `quotation_issue_date` (date, NOT NULL) - Issue date for generated invoice
+- `quotation_due_date` (date) - Due date for generated invoice
 
 **Approval Workflow Fields**:
 
@@ -201,9 +211,46 @@ This document provides a comprehensive overview of the business management syste
 
 - Quotation numbers must be unique
 - Can be created with or without existing client
-- Denormalized client data preserves historical information
+- Comprehensive client data enables automatic client creation
+- Invoice data enables automatic invoice creation
+- Item-based quotations have total_amount auto-calculated from quotation_items
+- Legacy quotations maintain manual total_amount entry
 - Approval workflow tracks approval/rejection timestamps
-- Conversion process creates both client and invoice
+- Conversion process creates both client and invoice with all captured data
+
+---
+
+### Table: `quotation_items`
+
+**Purpose**: Individual line items for item-based quotations, enabling detailed breakdown of services/products
+
+**Primary Key**: `id` (UUID, auto-generated with `gen_random_uuid()`)
+
+**Columns**:
+
+- `id` (UUID, NOT NULL, PRIMARY KEY) - Unique item identifier
+- `quotation_id` (UUID, NOT NULL, FOREIGN KEY) - Links to parent quotation
+- `position` (integer, NOT NULL) - Sequential position of item in quotation (1, 2, 3...)
+- `title` (text, NOT NULL) - Item title/name
+- `description` (text) - Optional item description
+- `price` (numeric, NOT NULL, DEFAULT 0) - Item price
+- `created_at` (timestamp with time zone, DEFAULT now()) - Creation timestamp
+- `updated_at` (timestamp with time zone, DEFAULT now()) - Last update timestamp
+
+**Constraints**:
+
+- `quotation_items_pkey` (PRIMARY KEY) on `id`
+- `quotation_items_quotation_id_fkey` (FOREIGN KEY) on `quotation_id` → `quotations.id` ON DELETE CASCADE
+- `quotation_items_quotation_id_position_key` (UNIQUE) on `(quotation_id, position)`
+
+**Business Rules**:
+
+- Each item must belong to a quotation
+- Position must be unique within each quotation
+- Items are automatically deleted when parent quotation is deleted
+- Price can be zero (for free items)
+- Title is required, description is optional
+- Items are ordered by position for display
 
 ---
 
@@ -344,9 +391,10 @@ This document provides a comprehensive overview of the business management syste
 5. **Client → Invoices**: One client can have multiple invoices
 6. **Client → Tickets**: One client can create multiple tickets
 7. **Client → Updates**: One client can have multiple updates
-8. **Invoice → Invoice Items**: One invoice can have multiple items (for item-based invoices)
-9. **Invoice → Receipts**: One invoice can have multiple receipts
-10. **Ticket → Updates**: One ticket can have multiple updates
+8. **Quotation → Quotation Items**: One quotation can have multiple items (for item-based quotations)
+9. **Invoice → Invoice Items**: One invoice can have multiple items (for item-based invoices)
+10. **Invoice → Receipts**: One invoice can have multiple receipts
+11. **Ticket → Updates**: One ticket can have multiple updates
 
 ### Optional Relationships
 
@@ -375,16 +423,21 @@ This document provides a comprehensive overview of the business management syste
 4. **Items Storage**: All items stored in invoice_items table with sequential positions
 5. **Balance Update**: Client's regular_balance is updated
 
-### Quotation-to-Invoice Workflow
+### Enhanced Quotation-to-Invoice Workflow
 
-1. **Quotation Creation**: Admin creates quotation with client and invoice details
-2. **Quotation Review**: Client reviews quotation
-3. **Approval Process**: Client approves quotation (sets approved_at timestamp)
-4. **Auto-Generation**: System automatically creates:
-   - New client record (if client_id is null)
-   - New invoice record (linked to quotation)
-   - Sets is_converted = true
-   - Sets converted_to_invoice_id
+1. **Quotation Creation**: Admin creates quotation with comprehensive client and invoice details
+   - **Legacy Mode**: Manual total amount entry with basic client info
+   - **Item-Based Mode**: Multiple items with auto-calculated total
+2. **Client Data Capture**: System captures complete client information:
+   - Basic: name, contact_email, contact_phone, address, notes
+   - Invoice: quotation_issue_date, quotation_due_date
+3. **Quotation Review**: Client reviews quotation with detailed breakdown
+4. **Approval Process**: Client approves quotation (sets approved_at timestamp)
+5. **Auto-Generation**: System automatically creates:
+   - New client record with all captured data (if client_id is null)
+   - New invoice record with items (for item-based) or description (for legacy)
+   - Copies quotation items to invoice_items (if applicable)
+   - Sets is_converted = true and converted_to_invoice_id
 
 ### Payment Processing Workflow
 
@@ -409,7 +462,7 @@ This document provides a comprehensive overview of the business management syste
 ### Financial Calculations
 
 - `balance_due = total_amount - amount_paid` (for invoices)
-- `total_amount = SUM(item_prices)` (for item-based invoices)
+- `total_amount = SUM(item_prices)` (for item-based invoices and quotations)
 - `regular_balance` should reflect sum of unpaid invoice balances
 - `paid_amount` should reflect sum of all receipt amounts
 
@@ -426,14 +479,15 @@ This document provides a comprehensive overview of the business management syste
 - Quotation numbers must be unique
 - Receipt numbers must be unique
 - User phone numbers must be unique
-- Item positions must be unique within each invoice
+- Item positions must be unique within each invoice and quotation
 
 ### Validation Rules
 
-- Item-based invoices must have at least one item
+- Item-based invoices and quotations must have at least one item
 - Item titles are required, descriptions are optional
 - Item prices must be non-negative
-- Invoice total_amount is auto-calculated for item-based invoices
+- Total amounts are auto-calculated for item-based invoices and quotations
+- Quotation client data must be comprehensive for auto-generation workflow
 
 ---
 
@@ -484,16 +538,33 @@ WHERE ii.invoice_id = $1
 ORDER BY ii.position;
 ```
 
-### Get Quotation Conversion Status
+### Get Quotation with Items and Conversion Status
 
 ```sql
 SELECT
     q.*,
     c.name as client_name,
-    i.invoice_number as converted_invoice_number
+    i.invoice_number as converted_invoice_number,
+    COUNT(qi.id) as item_count,
+    SUM(qi.price) as calculated_total
 FROM quotations q
 LEFT JOIN clients c ON q.client_id = c.id
-LEFT JOIN invoices i ON q.converted_to_invoice_id = i.id;
+LEFT JOIN invoices i ON q.converted_to_invoice_id = i.id
+LEFT JOIN quotation_items qi ON q.id = qi.quotation_id
+GROUP BY q.id, c.name, i.invoice_number;
+```
+
+### Get Quotation Items with Details
+
+```sql
+SELECT
+    qi.*,
+    q.quotation_number,
+    q.client_name
+FROM quotation_items qi
+JOIN quotations q ON qi.quotation_id = q.id
+WHERE qi.quotation_id = $1
+ORDER BY qi.position;
 ```
 
 ---
@@ -565,14 +636,17 @@ The quotation system is being enhanced to support comprehensive item-based manag
 
 ## Version History
 
-- **Current Version**: 2.0
+- **Current Version**: 3.0
 - **Last Updated**: [Current Date]
 - **Changes**:
-  - Added invoice_items table for item-based invoices
-  - Enhanced invoices table with uses_items flag
-  - Added database triggers for automatic total calculation
-  - Updated API endpoints for item management
-  - Enhanced frontend components for item-based invoice creation and display
+  - **Major Enhancement**: Added quotation_items table for item-based quotations
+  - **Enhanced Quotations**: Added comprehensive client data capture fields:
+    - `client_contact_email`, `client_contact_phone`, `client_address`, `client_notes`
+    - `quotation_issue_date`, `quotation_due_date` for invoice generation
+    - `uses_items` flag for item-based quotation system
+  - **Complete Quotation-to-Invoice Workflow**: System now supports full auto-generation of clients and invoices from quotations
+  - **Enhanced Documentation**: Updated all business workflows, relationships, and query patterns
+  - **Database Structure**: Now supports parallel item systems for both quotations and invoices
 
 ---
 
