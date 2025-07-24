@@ -1,14 +1,38 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
+import {
+  RefreshCw,
+  ChevronUp,
+  ChevronDown,
+  Filter,
+  Search,
+  Eye,
+  Edit,
+  Send,
+  CheckCircle,
+  XCircle,
+  Clock,
+  FileText,
+  DollarSign,
+  Calendar,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Define strict types for quotation status and sortable fields
+type QuotationStatus = "Draft" | "Sent" | "Approved" | "Rejected" | "Converted";
+type SortableField =
+  | "created_at"
+  | "quotation_number"
+  | "client_name"
+  | "total_amount"
+  | "issue_date"
+  | "due_date";
 
+// Updated Quotation interface to accurately reflect possible data shapes
 interface Quotation {
   id: string;
   quotation_number: string;
@@ -19,57 +43,97 @@ interface Quotation {
   total_amount: number;
   issue_date: string;
   due_date: string | null;
-  status: string;
+  status: QuotationStatus;
   created_at: string;
   is_converted: boolean;
   converted_to_invoice_id: string | null;
 }
 
 export default function QuotationsPage() {
+  const supabase = createClient();
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<string>("quotation_number");
+
+  // Filtering and search state with stricter types
+  const [statusFilter, setStatusFilter] = useState<QuotationStatus | "all">(
+    "all"
+  );
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [sortField, setSortField] = useState<SortableField>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  // Function to handle sorting
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      // If clicking the same field, toggle direction
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      // If clicking a new field, set it as sort field and default to desc
-      setSortField(field);
-      setSortDirection("desc");
-    }
-  };
+  // Statistics
+  const [stats, setStats] = useState({
+    total: 0,
+    draft: 0,
+    sent: 0,
+    approved: 0,
+    rejected: 0,
+    converted: 0,
+    totalValue: 0,
+  });
 
   // Function to fetch quotations
   const fetchQuotations = async () => {
+    setRefreshing(true);
+    setError(null);
+
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from("quotations")
         .select("*")
         .order(sortField, { ascending: sortDirection === "asc" });
 
       if (error) {
-        throw error;
-      }
+        setError(error.message);
+      } else {
+        const typed = (data ?? []) as unknown as Quotation[];
+        setQuotations(typed);
 
-      setQuotations(data || []);
+        // Calculate statistics
+        const total = typed.length;
+        const draft = typed.filter((q) => q.status === "Draft").length;
+        const sent = typed.filter((q) => q.status === "Sent").length;
+        const approved = typed.filter((q) => q.status === "Approved").length;
+        const rejected = typed.filter((q) => q.status === "Rejected").length;
+        const converted = typed.filter((q) => q.status === "Converted").length;
+        const totalValue = typed.reduce((sum, q) => sum + q.total_amount, 0);
+
+        setStats({
+          total,
+          draft,
+          sent,
+          approved,
+          rejected,
+          converted,
+          totalValue,
+        });
+      }
     } catch (err) {
       console.error("Error fetching quotations:", err);
       setError("Failed to load quotations");
     } finally {
       setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Function to handle sorting
+  const handleSort = (field: SortableField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
     }
   };
 
   // Function to update quotation status
   const updateQuotationStatus = async (
     quotationId: string,
-    newStatus: string
+    newStatus: QuotationStatus
   ) => {
     try {
       const updateData: any = { status: newStatus };
@@ -89,7 +153,6 @@ export default function QuotationsPage() {
         throw error;
       }
 
-      // Refresh the quotations list
       fetchQuotations();
     } catch (err) {
       console.error("Error updating quotation status:", err);
@@ -97,47 +160,69 @@ export default function QuotationsPage() {
     }
   };
 
-  // Function to assign quotation to client
-  const assignToClient = async (quotationId: string, clientId: string) => {
-    try {
-      const { error } = await supabase
-        .from("quotations")
-        .update({ client_id: clientId })
-        .eq("id", quotationId);
-
-      if (error) {
-        throw error;
-      }
-
-      // Refresh the quotations list
-      fetchQuotations();
-    } catch (err) {
-      console.error("Error assigning quotation to client:", err);
-      alert("Failed to assign quotation to client");
+  // Function to get status configuration
+  const getStatusConfig = (
+    status: QuotationStatus
+  ): {
+    className: string;
+    icon: LucideIcon;
+    label: string;
+  } => {
+    switch (status) {
+      case "Draft":
+        return {
+          className: "bg-gray-100 text-gray-800 border border-gray-200",
+          icon: FileText,
+          label: "Draft",
+        };
+      case "Sent":
+        return {
+          className: "bg-blue-100 text-blue-800 border border-blue-200",
+          icon: Send,
+          label: "Sent",
+        };
+      case "Approved":
+        return {
+          className: "bg-green-100 text-green-800 border border-green-200",
+          icon: CheckCircle,
+          label: "Approved",
+        };
+      case "Rejected":
+        return {
+          className: "bg-red-100 text-red-800 border border-red-200",
+          icon: XCircle,
+          label: "Rejected",
+        };
+      case "Converted":
+        return {
+          className: "bg-purple-100 text-purple-800 border border-purple-200",
+          icon: CheckCircle,
+          label: "Converted",
+        };
+      default:
+        return {
+          className: "bg-gray-100 text-gray-800 border border-gray-200",
+          icon: FileText,
+          label: "Unknown",
+        };
     }
   };
 
-  // Fetch quotations on component mount and when sort changes
-  useEffect(() => {
-    fetchQuotations();
-  }, [sortField, sortDirection]);
+  // Function to get header style
+  const getHeaderStyle = (field: SortableField) => {
+    return sortField === field
+      ? "bg-blue-50 text-blue-700 font-semibold"
+      : "bg-gray-50 text-gray-500 hover:bg-gray-100 cursor-pointer";
+  };
 
-  // Function to get status badge color
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case "Draft":
-        return "bg-gray-100 text-gray-800";
-      case "Sent":
-        return "bg-blue-100 text-blue-800";
-      case "Approved":
-        return "bg-green-100 text-green-800";
-      case "Rejected":
-        return "bg-red-100 text-red-800";
-      case "Converted":
-        return "bg-purple-100 text-purple-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  // Function to get sort icon
+  const getSortIcon = (field: SortableField) => {
+    if (sortField !== field) return null;
+    return sortDirection === "asc" ? (
+      <ChevronUp className="w-4 h-4 ml-1" />
+    ) : (
+      <ChevronDown className="w-4 h-4 ml-1" />
+    );
   };
 
   // Function to format date
@@ -153,14 +238,33 @@ export default function QuotationsPage() {
     }).format(amount);
   };
 
+  // Filter quotations based on search and status
+  const filteredQuotations = quotations.filter((quotation) => {
+    const matchesSearch =
+      searchTerm === "" ||
+      quotation.quotation_number
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      quotation.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      quotation.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      quotation.client_email.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" || quotation.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  useEffect(() => {
+    fetchQuotations();
+  }, [sortField, sortDirection]);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading quotations...</p>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading quotations...</p>
         </div>
       </div>
     );
@@ -168,261 +272,369 @@ export default function QuotationsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-red-600">{error}</p>
-            <button
-              onClick={fetchQuotations}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Try Again
-            </button>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Error Loading Quotations
+          </h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Quotations</h1>
-              <p className="mt-2 text-gray-600">
-                Manage quotations and track their status
-              </p>
-            </div>
-            <Link
-              href="/admin/quotations/new"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Create Quotation
-            </Link>
-          </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Quotations</h1>
+          <p className="text-gray-600 mt-2">
+            Manage quotations and track their status
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={fetchQuotations}
+            disabled={refreshing}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <RefreshCw
+              className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+            />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+          <Link
+            href="/admin/quotations/new"
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Create Quotation
+          </Link>
+        </div>
+      </div>
 
-          {/* Sort indicator */}
-          <div className="mt-4 flex items-center text-sm text-gray-500">
-            <span>
-              Sorting by {sortField.replace("_", " ")} (
-              {sortDirection === "asc" ? "ascending" : "descending"})
-            </span>
-            {sortField !== "quotation_number" && (
-              <span className="ml-2 text-sm text-gray-500">
-                • Sorted by {sortField.replace("_", " ")} (
-                {sortDirection === "asc" ? "ascending" : "descending"})
-              </span>
-            )}
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow-md border p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-blue-100 rounded-lg mr-4">
+              <FileText className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Total Quotations
+              </p>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+            </div>
           </div>
         </div>
 
-        {/* Quotations Table */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort("quotation_number")}
-                  >
-                    <div className="flex items-center">
-                      Quote #
-                      {sortField === "quotation_number" && (
-                        <span className="ml-1">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort("client_name")}
-                  >
-                    <div className="flex items-center">
-                      Client Name
-                      {sortField === "client_name" && (
-                        <span className="ml-1">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort("issue_date")}
-                  >
-                    <div className="flex items-center">
-                      Issue Date
-                      {sortField === "issue_date" && (
-                        <span className="ml-1">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort("due_date")}
-                  >
-                    <div className="flex items-center">
-                      Due Date
-                      {sortField === "due_date" && (
-                        <span className="ml-1">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort("total_amount")}
-                  >
-                    <div className="flex items-center">
-                      Total Amount
-                      {sortField === "total_amount" && (
-                        <span className="ml-1">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort("status")}
-                  >
-                    <div className="flex items-center">
-                      Status
-                      {sortField === "status" && (
-                        <span className="ml-1">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {quotations.map((quotation) => (
-                  <tr key={quotation.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {quotation.quotation_number}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div>
-                        <div className="font-medium">
-                          {quotation.client_name}
-                        </div>
-                        {quotation.client_email && (
-                          <div className="text-gray-500 text-xs">
-                            {quotation.client_email}
-                          </div>
-                        )}
-                        {quotation.client_phone && (
-                          <div className="text-gray-500 text-xs">
-                            {quotation.client_phone}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(quotation.issue_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {quotation.due_date
-                        ? formatDate(quotation.due_date)
-                        : "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(quotation.total_amount)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(
-                          quotation.status
-                        )}`}
-                      >
-                        {quotation.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <Link
-                          href={`/admin/quotations/${quotation.id}`}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          View
-                        </Link>
-                        <Link
-                          href={`/admin/quotations/${quotation.id}/edit`}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          Edit
-                        </Link>
-                        {quotation.status === "Draft" && (
-                          <button
-                            onClick={() =>
-                              updateQuotationStatus(quotation.id, "Sent")
-                            }
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            Send
-                          </button>
-                        )}
-                        {quotation.status === "Sent" && (
-                          <>
-                            <button
-                              onClick={() =>
-                                updateQuotationStatus(quotation.id, "Approved")
-                              }
-                              className="text-green-600 hover:text-green-900"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() =>
-                                updateQuotationStatus(quotation.id, "Rejected")
-                              }
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                        {quotation.status === "Approved" &&
-                          !quotation.is_converted && (
-                            <Link
-                              href={`/admin/quotations/${quotation.id}/convert`}
-                              className="text-purple-600 hover:text-purple-900"
-                            >
-                              Convert to Invoice
-                            </Link>
-                          )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="bg-white rounded-lg shadow-md border p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-yellow-100 rounded-lg mr-4">
+              <Clock className="w-6 h-6 text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Pending</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.draft + stats.sent}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md border p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-green-100 rounded-lg mr-4">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Approved</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.approved}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md border p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-purple-100 rounded-lg mr-4">
+              <DollarSign className="w-6 h-6 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Value</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatCurrency(stats.totalValue)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters and Search */}
+      <div className="bg-white rounded-lg shadow-md border p-6 mb-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Status Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <select
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as QuotationStatus | "all")
+              }
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Status</option>
+              <option value="Draft">Draft</option>
+              <option value="Sent">Sent</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Converted">Converted</option>
+            </select>
           </div>
 
-          {quotations.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No quotations found</p>
-              <Link
-                href="/admin/quotations/new"
-                className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Create your first quotation
-              </Link>
-            </div>
-          )}
+          {/* Search */}
+          <div className="flex items-center gap-2 flex-1">
+            <Search className="w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search quotations, clients, or descriptions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Quotations Table */}
+      <div className="bg-white rounded-lg shadow-md border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr>
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${getHeaderStyle(
+                    "quotation_number"
+                  )}`}
+                  onClick={() => handleSort("quotation_number")}
+                >
+                  <div className="flex items-center">
+                    Quote #{getSortIcon("quotation_number")}
+                  </div>
+                </th>
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${getHeaderStyle(
+                    "client_name"
+                  )}`}
+                  onClick={() => handleSort("client_name")}
+                >
+                  <div className="flex items-center">
+                    Client
+                    {getSortIcon("client_name")}
+                  </div>
+                </th>
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${getHeaderStyle(
+                    "issue_date"
+                  )}`}
+                  onClick={() => handleSort("issue_date")}
+                >
+                  <div className="flex items-center">
+                    Issue Date
+                    {getSortIcon("issue_date")}
+                  </div>
+                </th>
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${getHeaderStyle(
+                    "due_date"
+                  )}`}
+                  onClick={() => handleSort("due_date")}
+                >
+                  <div className="flex items-center">
+                    Due Date
+                    {getSortIcon("due_date")}
+                  </div>
+                </th>
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${getHeaderStyle(
+                    "total_amount"
+                  )}`}
+                  onClick={() => handleSort("total_amount")}
+                >
+                  <div className="flex items-center">
+                    Amount
+                    {getSortIcon("total_amount")}
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredQuotations.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center">
+                    <div className="text-gray-500">
+                      <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium mb-2">
+                        No quotations found
+                      </p>
+                      <p className="text-sm">
+                        Try adjusting your filters or search terms
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredQuotations.map((quotation) => {
+                  const statusConfig = getStatusConfig(quotation.status);
+                  const StatusIcon = statusConfig?.icon || FileText;
+
+                  return (
+                    <tr key={quotation.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="font-medium text-gray-900">
+                          {quotation.quotation_number}
+                        </div>
+                        <div className="text-gray-500 text-xs">
+                          {formatDate(quotation.created_at)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="max-w-xs">
+                          <div className="font-medium text-gray-900 truncate flex items-center">
+                            <User className="w-4 h-4 text-gray-400 mr-2" />
+                            {quotation.client_name}
+                          </div>
+                          <div className="text-sm text-gray-500 line-clamp-2">
+                            {quotation.client_email}
+                          </div>
+                          {quotation.client_phone && (
+                            <div className="text-sm text-gray-500">
+                              {quotation.client_phone}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex items-center">
+                          <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                          {formatDate(quotation.issue_date)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {quotation.due_date ? (
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                            {formatDate(quotation.due_date)}
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex items-center">
+                          <DollarSign className="w-4 h-4 text-gray-400 mr-2" />
+                          {formatCurrency(quotation.total_amount)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+                            statusConfig?.className ||
+                            "bg-gray-100 text-gray-800 border border-gray-200"
+                          }`}
+                        >
+                          <StatusIcon className="w-3 h-3 mr-1" />
+                          {statusConfig?.label || "Unknown"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <Link
+                            href={`/admin/quotations/${quotation.id}`}
+                            className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                          >
+                            <Eye className="w-3 h-3" />
+                            View
+                          </Link>
+                          <Link
+                            href={`/admin/quotations/${quotation.id}/edit`}
+                            className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                          >
+                            <Edit className="w-3 h-3" />
+                            Edit
+                          </Link>
+                          {quotation.status === "Draft" && (
+                            <button
+                              onClick={() =>
+                                updateQuotationStatus(quotation.id, "Sent")
+                              }
+                              className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                            >
+                              <Send className="w-3 h-3" />
+                              Send
+                            </button>
+                          )}
+                          {quotation.status === "Sent" && (
+                            <>
+                              <button
+                                onClick={() =>
+                                  updateQuotationStatus(
+                                    quotation.id,
+                                    "Approved"
+                                  )
+                                }
+                                className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                              >
+                                <CheckCircle className="w-3 h-3" />
+                                Approve
+                              </button>
+                              <button
+                                onClick={() =>
+                                  updateQuotationStatus(
+                                    quotation.id,
+                                    "Rejected"
+                                  )
+                                }
+                                className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                              >
+                                <XCircle className="w-3 h-3" />
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          {quotation.status === "Approved" &&
+                            !quotation.is_converted && (
+                              <Link
+                                href={`/admin/quotations/${quotation.id}/convert`}
+                                className="text-purple-600 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                              >
+                                <DollarSign className="w-3 h-3" />
+                                Convert
+                              </Link>
+                            )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
