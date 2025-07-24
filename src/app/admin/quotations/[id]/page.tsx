@@ -332,25 +332,27 @@ export default function QuotationDetailPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Back Navigation */}
+      <div className="mb-6">
+        <Link
+          href="/admin/quotations"
+          className="text-blue-600 hover:text-blue-800 flex items-center gap-2 text-sm font-medium"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Quotations
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex justify-between items-start">
-          <div className="flex items-center space-x-4">
-            <Link
-              href="/admin/quotations"
-              className="text-blue-600 hover:text-blue-800 flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Quotations
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Quotation {quotation.quotation_number}
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Created on {formatDate(quotation.created_at)}
-              </p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Quotation {quotation.quotation_number}
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Created on {formatDate(quotation.created_at)}
+            </p>
           </div>
           <div className="flex gap-3">
             <Link

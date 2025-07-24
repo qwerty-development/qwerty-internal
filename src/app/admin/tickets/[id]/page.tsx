@@ -199,15 +199,19 @@ export default function TicketDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Back Navigation */}
+        <div className="mb-6">
           <button
             onClick={() => router.push("/admin/tickets")}
-            className="inline-flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="text-blue-600 hover:text-blue-800 flex items-center gap-2 text-sm font-medium"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4" />
             Back to Tickets
           </button>
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <span
               className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(

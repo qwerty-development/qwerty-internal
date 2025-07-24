@@ -150,16 +150,19 @@ export default function ClientDetailPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Back Navigation */}
+      <div className="mb-6">
+        <Link
+          href="/admin/clients"
+          className="text-blue-600 hover:text-blue-800 flex items-center gap-2 text-sm font-medium"
+        >
+          ← Back to Clients
+        </Link>
+      </div>
+
+      {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center mb-4">
-          <Link
-            href="/admin/clients"
-            className="text-blue-600 hover:text-blue-800 mr-4"
-          >
-            ← Back to Clients
-          </Link>
-        </div>
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
