@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides a comprehensive overview of the business management system database. The system manages clients, quotations, invoices, receipts, tickets, and user accounts with a focus on streamlining the quotation-to-invoice workflow.
+This document provides a comprehensive overview of the business management system database. The system manages clients, quotations, invoices, receipts, tickets, and user accounts with a focus on streamlining the quotation-to-invoice workflow. The system now supports both legacy invoices (with manual total amounts) and modern item-based invoices (with auto-calculated totals).
 
 ## Database Schema
 
@@ -75,6 +75,86 @@ This document provides a comprehensive overview of the business management syste
 
 ---
 
+### Table: `invoices`
+
+**Purpose**: Official billing documents generated from quotations or created manually, supporting both legacy and modern item-based systems
+
+**Primary Key**: `id` (UUID, auto-generated with `gen_random_uuid()`)
+
+**Columns**:
+
+- `id` (UUID, NOT NULL, PRIMARY KEY) - Unique invoice identifier
+- `client_id` (UUID, NOT NULL, FOREIGN KEY) - Links to client
+- `quotation_id` (UUID, FOREIGN KEY) - Links to source quotation (optional)
+- `invoice_number` (text, NOT NULL, UNIQUE) - Unique invoice reference number
+- `issue_date` (date, NOT NULL) - Date invoice was issued
+- `due_date` (date, NOT NULL) - Date payment is due
+- `description` (text, NOT NULL) - Detailed description of services/products
+- `total_amount` (numeric, NOT NULL) - Total invoice amount (auto-calculated for item-based invoices)
+- `amount_paid` (numeric, DEFAULT 0) - Amount paid to date
+- `balance_due` (numeric, NOT NULL) - Outstanding balance (calculated: total_amount - amount_paid)
+- `status` (text, DEFAULT 'Unpaid') - Invoice status: 'Unpaid', 'Partially Paid', 'Paid'
+- `uses_items` (boolean, DEFAULT false) - Whether invoice uses the new item-based system
+- `created_by` (UUID, NOT NULL, FOREIGN KEY) - User who created the invoice
+- `created_at` (timestamp with time zone, DEFAULT now()) - Creation timestamp
+- `updated_at` (timestamp with time zone, DEFAULT now()) - Last update timestamp
+
+**Constraints**:
+
+- `invoices_pkey` (PRIMARY KEY) on `id`
+- `invoices_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id`
+- `invoices_quotation_id_fkey` (FOREIGN KEY) on `quotation_id` → `quotations.id`
+- `invoices_invoice_number_key` (UNIQUE) on `invoice_number`
+- `invoices_created_by_fkey` (FOREIGN KEY) on `created_by` → `users.id`
+
+**Business Rules**:
+
+- Invoice numbers must be unique
+- Can be created from quotations or manually
+- Balance due is calculated as total_amount - amount_paid
+- Status updates based on payment amounts
+- All invoices must have a client
+- Item-based invoices have total_amount auto-calculated from invoice_items
+- Legacy invoices maintain manual total_amount entry
+
+---
+
+### Table: `invoice_items`
+
+**Purpose**: Individual line items for item-based invoices, enabling detailed breakdown of services/products
+
+**Primary Key**: `id` (UUID, auto-generated with `gen_random_uuid()`)
+
+**Columns**:
+
+- `id` (UUID, NOT NULL, PRIMARY KEY) - Unique item identifier
+- `invoice_id` (UUID, NOT NULL, FOREIGN KEY) - Links to parent invoice
+- `position` (integer, NOT NULL) - Sequential position of item in invoice (1, 2, 3...)
+- `title` (text, NOT NULL) - Item title/name
+- `description` (text) - Optional item description
+- `price` (numeric, NOT NULL, DEFAULT 0) - Item price
+- `created_at` (timestamp with time zone, DEFAULT now()) - Creation timestamp
+- `updated_at` (timestamp with time zone, DEFAULT now()) - Last update timestamp
+
+**Constraints**:
+
+- `invoice_items_pkey` (PRIMARY KEY) on `id`
+- `invoice_items_invoice_id_fkey` (FOREIGN KEY) on `invoice_id` → `invoices.id` ON DELETE CASCADE
+- `unique_invoice_position` (UNIQUE) on `(invoice_id, position)`
+- `idx_invoice_items_invoice_id` (INDEX) on `invoice_id`
+- `idx_invoice_items_position` (INDEX) on `(invoice_id, position)`
+
+**Business Rules**:
+
+- Each item must belong to an invoice
+- Position must be unique within each invoice
+- Items are automatically deleted when parent invoice is deleted
+- Price can be zero (for free items)
+- Title is required, description is optional
+- Items are ordered by position for display
+
+---
+
 ### Table: `quotations`
 
 **Purpose**: Pre-invoice proposals that can be converted to clients and invoices upon approval
@@ -124,47 +204,6 @@ This document provides a comprehensive overview of the business management syste
 - Denormalized client data preserves historical information
 - Approval workflow tracks approval/rejection timestamps
 - Conversion process creates both client and invoice
-
----
-
-### Table: `invoices`
-
-**Purpose**: Official billing documents generated from quotations or created manually
-
-**Primary Key**: `id` (UUID, auto-generated with `gen_random_uuid()`)
-
-**Columns**:
-
-- `id` (UUID, NOT NULL, PRIMARY KEY) - Unique invoice identifier
-- `client_id` (UUID, NOT NULL, FOREIGN KEY) - Links to client
-- `quotation_id` (UUID, FOREIGN KEY) - Links to source quotation (optional)
-- `invoice_number` (text, NOT NULL, UNIQUE) - Unique invoice reference number
-- `issue_date` (date, NOT NULL) - Date invoice was issued
-- `due_date` (date, NOT NULL) - Date payment is due
-- `description` (text, NOT NULL) - Detailed description of services/products
-- `total_amount` (numeric, NOT NULL) - Total invoice amount
-- `amount_paid` (numeric, DEFAULT 0) - Amount paid to date
-- `balance_due` (numeric, NOT NULL) - Outstanding balance (calculated: total_amount - amount_paid)
-- `status` (text, DEFAULT 'Unpaid') - Invoice status: 'Unpaid', 'Partially Paid', 'Paid'
-- `created_by` (UUID, NOT NULL, FOREIGN KEY) - User who created the invoice
-- `created_at` (timestamp with time zone, DEFAULT now()) - Creation timestamp
-- `updated_at` (timestamp with time zone, DEFAULT now()) - Last update timestamp
-
-**Constraints**:
-
-- `invoices_pkey` (PRIMARY KEY) on `id`
-- `invoices_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id`
-- `invoices_quotation_id_fkey` (FOREIGN KEY) on `quotation_id` → `quotations.id`
-- `invoices_invoice_number_key` (UNIQUE) on `invoice_number`
-- `invoices_created_by_fkey` (FOREIGN KEY) on `created_by` → `users.id`
-
-**Business Rules**:
-
-- Invoice numbers must be unique
-- Can be created from quotations or manually
-- Balance due is calculated as total_amount - amount_paid
-- Status updates based on payment amounts
-- All invoices must have a client
 
 ---
 
@@ -266,6 +305,34 @@ This document provides a comprehensive overview of the business management syste
 
 ---
 
+## Database Functions and Triggers
+
+### Invoice Total Calculation
+
+**Function**: `calculate_invoice_total()`
+
+**Purpose**: Automatically calculates and updates invoice total_amount when items are modified
+
+**Triggers**:
+
+- `trigger_calculate_invoice_total_insert` - Fires after INSERT on invoice_items
+- `trigger_calculate_invoice_total_update` - Fires after UPDATE on invoice_items
+- `trigger_calculate_invoice_total_delete` - Fires after DELETE on invoice_items
+
+**Behavior**: Updates the parent invoice's total_amount to the sum of all associated item prices
+
+### Invoice Items Validation
+
+**Function**: `validate_invoice_has_items()`
+
+**Purpose**: Ensures item-based invoices have at least one item
+
+**Trigger**: `trigger_validate_invoice_items` - Fires before UPDATE on invoices
+
+**Behavior**: Raises exception if invoice uses items system but has no items
+
+---
+
 ## Key Relationships
 
 ### One-to-Many Relationships
@@ -277,8 +344,9 @@ This document provides a comprehensive overview of the business management syste
 5. **Client → Invoices**: One client can have multiple invoices
 6. **Client → Tickets**: One client can create multiple tickets
 7. **Client → Updates**: One client can have multiple updates
-8. **Invoice → Receipts**: One invoice can have multiple receipts
-9. **Ticket → Updates**: One ticket can have multiple updates
+8. **Invoice → Invoice Items**: One invoice can have multiple items (for item-based invoices)
+9. **Invoice → Receipts**: One invoice can have multiple receipts
+10. **Ticket → Updates**: One ticket can have multiple updates
 
 ### Optional Relationships
 
@@ -287,7 +355,25 @@ This document provides a comprehensive overview of the business management syste
 3. **Update → Ticket**: Update can be linked to specific ticket
 4. **Update → Client**: Update can be linked to specific client
 
+---
+
 ## Business Workflows
+
+### Invoice Creation Workflow
+
+#### Legacy Invoice Creation
+
+1. **Manual Entry**: Admin enters client, dates, description, and total amount
+2. **Invoice Creation**: System creates invoice with manual total_amount
+3. **Balance Update**: Client's regular_balance is updated
+
+#### Item-Based Invoice Creation
+
+1. **Item Entry**: Admin adds multiple items with titles, descriptions, and prices
+2. **Auto-Calculation**: System calculates total from sum of item prices
+3. **Invoice Creation**: System creates invoice with uses_items = true
+4. **Items Storage**: All items stored in invoice_items table with sequential positions
+5. **Balance Update**: Client's regular_balance is updated
 
 ### Quotation-to-Invoice Workflow
 
@@ -316,11 +402,14 @@ This document provides a comprehensive overview of the business management syste
 3. **Status Updates**: Admin updates ticket status through workflow
 4. **Communication**: Updates linked to tickets for communication tracking
 
+---
+
 ## Data Integrity Rules
 
 ### Financial Calculations
 
 - `balance_due = total_amount - amount_paid` (for invoices)
+- `total_amount = SUM(item_prices)` (for item-based invoices)
 - `regular_balance` should reflect sum of unpaid invoice balances
 - `paid_amount` should reflect sum of all receipt amounts
 
@@ -337,8 +426,35 @@ This document provides a comprehensive overview of the business management syste
 - Quotation numbers must be unique
 - Receipt numbers must be unique
 - User phone numbers must be unique
+- Item positions must be unique within each invoice
+
+### Validation Rules
+
+- Item-based invoices must have at least one item
+- Item titles are required, descriptions are optional
+- Item prices must be non-negative
+- Invoice total_amount is auto-calculated for item-based invoices
+
+---
 
 ## Common Query Patterns
+
+### Get Invoice with Items and Payment Summary
+
+```sql
+SELECT
+    i.*,
+    c.name as client_name,
+    COUNT(ii.id) as item_count,
+    SUM(ii.price) as calculated_total,
+    COUNT(r.id) as receipt_count,
+    SUM(r.amount) as total_received
+FROM invoices i
+JOIN clients c ON i.client_id = c.id
+LEFT JOIN invoice_items ii ON i.id = ii.invoice_id
+LEFT JOIN receipts r ON i.id = r.invoice_id
+GROUP BY i.id, c.name;
+```
 
 ### Get Client with Financial Summary
 
@@ -354,18 +470,18 @@ LEFT JOIN invoices i ON c.id = i.client_id
 GROUP BY c.id;
 ```
 
-### Get Invoice with Payment History
+### Get Invoice Items with Details
 
 ```sql
 SELECT
-    i.*,
-    c.name as client_name,
-    COUNT(r.id) as receipt_count,
-    SUM(r.amount) as total_received
-FROM invoices i
+    ii.*,
+    i.invoice_number,
+    c.name as client_name
+FROM invoice_items ii
+JOIN invoices i ON ii.invoice_id = i.id
 JOIN clients c ON i.client_id = c.id
-LEFT JOIN receipts r ON i.id = r.invoice_id
-GROUP BY i.id, c.name;
+WHERE ii.invoice_id = $1
+ORDER BY ii.position;
 ```
 
 ### Get Quotation Conversion Status
@@ -380,14 +496,55 @@ LEFT JOIN clients c ON q.client_id = c.id
 LEFT JOIN invoices i ON q.converted_to_invoice_id = i.id;
 ```
 
+---
+
+## API Endpoints
+
+### Invoice Management
+
+- `POST /api/invoices` - Create new invoice (supports both legacy and item-based)
+- `GET /api/invoices/[id]/items` - Fetch invoice items
+- `POST /api/invoices/[id]/items` - Update invoice items (replaces all items)
+
+### Payment Management
+
+- `POST /api/receipts` - Create new payment receipt
+- `GET /api/receipts` - List all receipts
+
+### Client Management
+
+- `POST /api/clients` - Create new client
+- `GET /api/clients` - List all clients
+- `PUT /api/clients/[id]` - Update client
+
+---
+
+## Frontend Components
+
+### Invoice Creation
+
+- **Legacy Mode**: Simple form with manual total amount entry
+- **Item-Based Mode**: Dynamic form with add/remove items functionality
+- **Auto-Calculation**: Real-time total calculation from items
+- **Validation**: Comprehensive form validation for both modes
+
+### Invoice Details
+
+- **Conditional Display**: Shows items table only for item-based invoices
+- **Item Breakdown**: Sequential numbering, titles, descriptions, prices
+- **Total Summary**: Footer with calculated total
+- **Payment Management**: Integrated payment recording and history
+
+---
+
 ## Future Enhancements
 
-### Planned Quotation System
+### Planned Quotation System Enhancement
 
-The system is being enhanced to support comprehensive quotation management:
+The quotation system is being enhanced to support comprehensive item-based management:
 
 - Quotations will capture complete client information
-- Quotations will capture complete invoice information
+- Quotations will capture complete invoice information with items
 - Approval workflow will auto-generate both clients and invoices
 - Database modifications will be made to support this enhanced workflow
 
@@ -401,14 +558,21 @@ The system is being enhanced to support comprehensive quotation management:
 - Email notification system
 - Document generation (PDFs)
 - Reporting and analytics
+- Bulk operations
+- Advanced search and filtering
 
 ---
 
 ## Version History
 
-- **Current Version**: 1.0
-- **Last Updated**: [Date]
-- **Changes**: Initial documentation created
+- **Current Version**: 2.0
+- **Last Updated**: [Current Date]
+- **Changes**:
+  - Added invoice_items table for item-based invoices
+  - Enhanced invoices table with uses_items flag
+  - Added database triggers for automatic total calculation
+  - Updated API endpoints for item management
+  - Enhanced frontend components for item-based invoice creation and display
 
 ---
 
