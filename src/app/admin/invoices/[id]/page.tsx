@@ -15,6 +15,7 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<any>(null);
   const [client, setClient] = useState<any>(null);
   const [receipts, setReceipts] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +30,7 @@ export default function InvoiceDetailPage() {
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  // Fetch invoice, client, and receipts data
+  // Fetch invoice, client, receipts, and items data
   useEffect(() => {
     const fetchInvoiceData = async () => {
       setLoading(true);
@@ -125,6 +126,21 @@ export default function InvoiceDetailPage() {
           console.error("Receipts fetch error:", receiptsError);
         } else {
           setReceipts(receiptsData || []);
+        }
+
+        // Fetch invoice items if invoice uses items system
+        if (invoiceData?.uses_items) {
+          const { data: itemsData, error: itemsError } = await supabase
+            .from("invoice_items")
+            .select("*")
+            .eq("invoice_id", invoiceId)
+            .order("position");
+
+          if (itemsError) {
+            console.error("Items fetch error:", itemsError);
+          } else {
+            setItems(itemsData || []);
+          }
         }
       } catch (err) {
         console.error("Unexpected error:", err);
@@ -417,6 +433,75 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Invoice Items Section */}
+      {invoice?.uses_items && items.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md border mb-8">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Invoice Items
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    #
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Item
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Price
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {items.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {item.position}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.title}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {item.description || (
+                        <span className="text-gray-400 italic">
+                          No description
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                      ${item.price.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-gray-50">
+                <tr>
+                  <td
+                    colSpan={3}
+                    className="px-6 py-4 text-right text-sm font-semibold text-gray-900"
+                  >
+                    Total:
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
+                    $
+                    {items
+                      .reduce((sum, item) => sum + item.price, 0)
+                      .toFixed(2)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Add Payment Section */}
       {invoice.balance_due > 0 && (
