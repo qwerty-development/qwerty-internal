@@ -36,28 +36,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get all invoices with basic info
-    const { data: invoices, error } = await supabase
-      .from("invoices")
-      .select("id, invoice_number, client_id, quotation_id, status, created_at")
+    // Fetch recent quotations
+    const { data: quotations, error } = await supabase
+      .from("quotations")
+      .select("id, quotation_number, status, client_name, created_at")
       .order("created_at", { ascending: false })
       .limit(10);
 
     if (error) {
-      console.error("Error fetching invoices:", error);
+      console.error("Error fetching quotations:", error);
       return NextResponse.json(
-        { error: "Failed to fetch invoices" },
+        { error: "Failed to fetch quotations" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      invoices: invoices || [],
-      count: invoices?.length || 0,
+      quotations: quotations || [],
+      count: quotations?.length || 0,
     });
   } catch (error) {
-    console.error("Error in debug invoices:", error);
+    console.error("Debug quotations error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

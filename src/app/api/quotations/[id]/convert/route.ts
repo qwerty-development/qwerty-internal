@@ -6,8 +6,19 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  console.log("🚀 CONVERSION API CALLED - START");
+  console.log("🆔 Quotation ID:", params.id);
+  console.log("🆔 Quotation ID length:", params.id?.length);
+  console.log("🆔 Quotation ID type:", typeof params.id);
+  console.log("📡 Request method:", request.method);
+  console.log("📡 Request URL:", request.url);
+  console.log(
+    "📡 Request headers:",
+    Object.fromEntries(request.headers.entries())
+  );
+
   try {
-    console.log("🚀 CONVERSION API CALLED");
+    console.log("🚀 CONVERSION API CALLED - INSIDE TRY");
     console.log("🆔 Quotation ID:", params.id);
 
     const supabase = createServerClient(
@@ -15,13 +26,14 @@ export async function POST(
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return cookies().getAll();
+          async getAll() {
+            return (await cookies()).getAll();
           },
-          setAll(cookiesToSet) {
+          async setAll(cookiesToSet) {
             try {
+              const cookieStore = await cookies();
               cookiesToSet.forEach(({ name, value, options }) =>
-                cookies().set(name, value, options)
+                cookieStore.set(name, value, options)
               );
             } catch {
               // The `setAll` method was called from a Server Component.
@@ -44,6 +56,16 @@ export async function POST(
 
     console.log("✅ Authenticated user:", session.user.id);
     const quotationId = params.id;
+
+    // Validate quotation ID
+    console.log("🔍 Validating quotation ID:", quotationId);
+    if (!quotationId || quotationId.length < 10) {
+      console.log("❌ Invalid quotation ID:", quotationId);
+      return NextResponse.json(
+        { error: "Invalid quotation ID" },
+        { status: 400 }
+      );
+    }
 
     // Fetch quotation with all data
     console.log("📋 Fetching quotation data...");

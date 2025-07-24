@@ -238,6 +238,47 @@ export default function QuotationsPage() {
     }).format(amount);
   };
 
+  // Function to convert quotation to invoice
+  const convertQuotationToInvoice = async (quotationId: string) => {
+    try {
+      console.log("🚀 Converting quotation to invoice:", quotationId);
+
+      const response = await fetch(`/api/quotations/${quotationId}/convert`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("📥 Response status:", response.status);
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("❌ Conversion failed:", error);
+        alert(`Failed to convert quotation: ${error.error}`);
+        return;
+      }
+
+      const result = await response.json();
+      console.log("✅ Conversion result:", result);
+
+      if (result.success && result.invoice) {
+        alert(`Invoice ${result.invoice.invoice_number} created successfully!`);
+        // Navigate to the invoice
+        window.location.href = `/admin/invoices/${result.invoice.id}`;
+      } else {
+        alert("Conversion succeeded but invoice details are missing.");
+      }
+    } catch (error) {
+      console.error("💥 Conversion error:", error);
+      alert(
+        `Conversion failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
   // Filter quotations based on search and status
   const filteredQuotations = quotations.filter((quotation) => {
     const matchesSearch =
@@ -619,13 +660,15 @@ export default function QuotationsPage() {
                           )}
                           {quotation.status === "Approved" &&
                             !quotation.is_converted && (
-                              <Link
-                                href={`/admin/quotations/${quotation.id}/convert`}
+                              <button
+                                onClick={() =>
+                                  convertQuotationToInvoice(quotation.id)
+                                }
                                 className="text-purple-600 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
                               >
                                 <DollarSign className="w-3 h-3" />
                                 Convert
-                              </Link>
+                              </button>
                             )}
                         </div>
                       </td>
