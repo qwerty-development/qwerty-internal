@@ -63,56 +63,41 @@ export default function InvoiceDetailPage() {
 
         console.log("Database connection test successful");
 
-        // Fetch invoice with client information
+        // Fetch invoice data (simplified to avoid join issues)
         const { data: invoiceData, error: invoiceError } = await supabase
           .from("invoices")
-          .select(
-            `
-            *,
-            clients (
-              id,
-              name,
-              contact_email,
-              contact_phone,
-              address
-            )
-          `
-          )
+          .select("*")
           .eq("id", invoiceId)
           .single();
 
         if (invoiceError) {
           console.error("Invoice fetch error:", invoiceError);
+          setError(`Invoice not found: ${invoiceError.message}`);
+          setLoading(false);
+          return;
+        }
 
-          // Try fetching invoice without client data as fallback
-          console.log("Trying fallback query without client data...");
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from("invoices")
-            .select("*")
-            .eq("id", invoiceId)
+        console.log("Invoice data:", invoiceData);
+        setInvoice(invoiceData);
+
+        // Fetch client data separately if client_id exists
+        if (invoiceData.client_id) {
+          const { data: clientData, error: clientError } = await supabase
+            .from("clients")
+            .select("id, name, contact_email, contact_phone, address")
+            .eq("id", invoiceData.client_id)
             .single();
 
-          if (fallbackError) {
-            console.error("Fallback query also failed:", fallbackError);
-            setError(`Invoice not found: ${invoiceError.message}`);
-            setLoading(false);
-            return;
-          } else {
-            console.log("Fallback query succeeded:", fallbackData);
-            setInvoice(fallbackData);
+          if (clientError) {
+            console.warn("Client fetch error:", clientError);
             setClient(null);
+          } else {
+            console.log("Client data:", clientData);
+            setClient(clientData);
           }
         } else {
-          console.log("Invoice data:", invoiceData);
-          setInvoice(invoiceData);
-
-          // Set client data (might be null if relationship is broken)
-          if (invoiceData.clients) {
-            setClient(invoiceData.clients);
-          } else {
-            console.warn("No client data found for invoice:", invoiceData.id);
-            setClient(null);
-          }
+          console.warn("No client_id found for invoice:", invoiceData.id);
+          setClient(null);
         }
 
         // Fetch receipts for this invoice

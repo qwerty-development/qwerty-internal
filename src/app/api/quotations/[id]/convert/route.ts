@@ -135,6 +135,23 @@ export async function POST(
     }
 
     // Create invoice
+    console.log("Creating invoice with data:", {
+      client_id: clientId,
+      quotation_id: quotationId,
+      invoice_number: invoiceNumber,
+      issue_date: quotation.quotation_issue_date || quotation.issue_date,
+      due_date:
+        quotation.quotation_due_date ||
+        quotation.due_date ||
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0],
+      description: quotation.description,
+      total_amount: quotation.total_amount,
+      status: "Unpaid",
+      uses_items: quotation.uses_items || false,
+    });
+
     const { data: invoiceRecord, error: invoiceError } = await supabase
       .from("invoices")
       .insert({
@@ -166,6 +183,8 @@ export async function POST(
         { status: 500 }
       );
     }
+
+    console.log("Invoice created successfully:", invoiceRecord);
 
     // If quotation uses items, copy them to invoice items
     if (quotation.uses_items) {
@@ -228,12 +247,16 @@ export async function POST(
       // Don't fail the whole operation, just log the error
     }
 
-    return NextResponse.json({
+    const response = {
       success: true,
       message: "Quotation converted to invoice successfully",
       invoice: invoiceRecord,
       clientId: clientId,
-    });
+    };
+    
+    console.log("Conversion response:", response);
+    
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error in quotation conversion:", error);
     return NextResponse.json(

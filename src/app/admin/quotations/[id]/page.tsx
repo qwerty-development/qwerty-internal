@@ -207,20 +207,45 @@ export default function QuotationDetailPage() {
     if (!quotation) return;
 
     try {
+      console.log("Starting conversion for quotation:", quotationId);
+
       const response = await fetch(`/api/quotations/${quotationId}/convert`, {
         method: "POST",
       });
 
+      console.log("Conversion response status:", response.status);
+
       if (!response.ok) {
         const error = await response.json();
+        console.error("Conversion error response:", error);
         throw new Error(error.error || "Failed to convert quotation");
       }
 
       const result = await response.json();
+      console.log("Conversion result:", result);
 
-      if (result.success) {
+      if (result.success && result.invoice) {
         alert("Quotation converted to invoice successfully!");
-        router.push(`/admin/invoices/${result.invoice.id}`);
+        console.log("Invoice object:", result.invoice);
+        console.log("Invoice ID:", result.invoice.id);
+        console.log("Invoice ID type:", typeof result.invoice.id);
+        console.log("Navigation URL:", `/admin/invoices/${result.invoice.id}`);
+
+        // Try to navigate to the invoice page
+        try {
+          router.push(`/admin/invoices/${result.invoice.id}`);
+        } catch (navError) {
+          console.error("Navigation error:", navError);
+          // Fallback: navigate to invoices list
+          alert("Invoice created successfully! Redirecting to invoices list.");
+          router.push("/admin/invoices");
+        }
+      } else {
+        console.error("Conversion succeeded but no invoice returned:", result);
+        alert(
+          "Conversion succeeded but invoice details are missing. Redirecting to invoices list."
+        );
+        router.push("/admin/invoices");
       }
     } catch (err) {
       console.error("Error converting to invoice:", err);

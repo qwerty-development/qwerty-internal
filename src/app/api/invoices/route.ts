@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
         total_amount: totalAmount,
         amount_paid: 0,
         balance_due: totalAmount,
-        status: "unpaid",
+        status: "Unpaid",
         uses_items: usingItems,
         created_by: session.user.id,
       })
