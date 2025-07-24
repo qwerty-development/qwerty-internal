@@ -7,6 +7,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log("🚀 CONVERSION API CALLED");
+    console.log("🆔 Quotation ID:", params.id);
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -35,12 +38,15 @@ export async function POST(
       data: { session },
     } = await supabase.auth.getSession();
     if (!session) {
+      console.log("❌ Unauthorized - no session");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    console.log("✅ Authenticated user:", session.user.id);
     const quotationId = params.id;
 
     // Fetch quotation with all data
+    console.log("📋 Fetching quotation data...");
     const { data: quotation, error: quotationError } = await supabase
       .from("quotations")
       .select("*")
@@ -48,14 +54,25 @@ export async function POST(
       .single();
 
     if (quotationError || !quotation) {
+      console.log("❌ Quotation not found:", quotationError);
       return NextResponse.json(
         { error: "Quotation not found" },
         { status: 404 }
       );
     }
 
+    console.log("📋 Quotation found:", {
+      id: quotation.id,
+      status: quotation.status,
+      client_id: quotation.client_id,
+      client_name: quotation.client_name,
+      is_converted: quotation.is_converted,
+      uses_items: quotation.uses_items,
+    });
+
     // Check if quotation is already converted
     if (quotation.is_converted) {
+      console.log("❌ Quotation already converted");
       return NextResponse.json(
         { error: "Quotation is already converted" },
         { status: 400 }
@@ -64,6 +81,10 @@ export async function POST(
 
     // Check if quotation is approved
     if (quotation.status !== "Approved") {
+      console.log(
+        "❌ Quotation not approved, current status:",
+        quotation.status
+      );
       return NextResponse.json(
         { error: "Quotation must be approved before conversion" },
         { status: 400 }
@@ -72,6 +93,7 @@ export async function POST(
 
     // Start transaction
     let clientId = quotation.client_id;
+    console.log("👤 Initial client ID:", clientId);
 
     // If no client is assigned, create one from quotation data
     if (!clientId && quotation.client_name) {
@@ -253,9 +275,9 @@ export async function POST(
       invoice: invoiceRecord,
       clientId: clientId,
     };
-    
+
     console.log("Conversion response:", response);
-    
+
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error in quotation conversion:", error);

@@ -204,53 +204,104 @@ export default function QuotationDetailPage() {
 
   // Convert to invoice
   const convertToInvoice = async () => {
-    if (!quotation) return;
+    if (!quotation) {
+      console.error("No quotation data available");
+      alert("Error: No quotation data available");
+      return;
+    }
+
+    console.log("🚀 STARTING CONVERSION");
+    console.log("📋 Quotation Data:", quotation);
+    console.log("🆔 Quotation ID:", quotationId);
 
     try {
-      console.log("Starting conversion for quotation:", quotationId);
+      console.log(
+        "📡 Making API call to:",
+        `/api/quotations/${quotationId}/convert`
+      );
 
       const response = await fetch(`/api/quotations/${quotationId}/convert`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
-      console.log("Conversion response status:", response.status);
+      console.log("📥 Response status:", response.status);
+      console.log(
+        "📥 Response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
 
       if (!response.ok) {
-        const error = await response.json();
-        console.error("Conversion error response:", error);
-        throw new Error(error.error || "Failed to convert quotation");
+        console.error(
+          "❌ Response not OK:",
+          response.status,
+          response.statusText
+        );
+        let errorText = "";
+        try {
+          const error = await response.json();
+          console.error("❌ Error response body:", error);
+          errorText = error.error || "Failed to convert quotation";
+        } catch (parseError) {
+          console.error("❌ Failed to parse error response:", parseError);
+          errorText = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorText);
       }
 
       const result = await response.json();
-      console.log("Conversion result:", result);
+      console.log("✅ Conversion result:", result);
 
       if (result.success && result.invoice) {
-        alert("Quotation converted to invoice successfully!");
-        console.log("Invoice object:", result.invoice);
-        console.log("Invoice ID:", result.invoice.id);
-        console.log("Invoice ID type:", typeof result.invoice.id);
-        console.log("Navigation URL:", `/admin/invoices/${result.invoice.id}`);
+        console.log("🎉 SUCCESS! Invoice created:");
+        console.log("📄 Invoice object:", result.invoice);
+        console.log("🆔 Invoice ID:", result.invoice.id);
+        console.log("🏷️ Invoice number:", result.invoice.invoice_number);
+        console.log("👤 Client ID:", result.clientId);
 
-        // Try to navigate to the invoice page
-        try {
-          router.push(`/admin/invoices/${result.invoice.id}`);
-        } catch (navError) {
-          console.error("Navigation error:", navError);
-          // Fallback: navigate to invoices list
-          alert("Invoice created successfully! Redirecting to invoices list.");
-          router.push("/admin/invoices");
-        }
+        const invoiceId = result.invoice.id;
+        const navigationUrl = `/admin/invoices/${invoiceId}`;
+
+        console.log("🧭 Navigation URL:", navigationUrl);
+
+        alert(`Invoice ${result.invoice.invoice_number} created successfully!`);
+
+        // Add a small delay to ensure the alert is seen
+        setTimeout(() => {
+          console.log("🧭 Attempting navigation...");
+          router.push(navigationUrl);
+        }, 1000);
       } else {
-        console.error("Conversion succeeded but no invoice returned:", result);
-        alert(
-          "Conversion succeeded but invoice details are missing. Redirecting to invoices list."
+        console.error(
+          "❌ Conversion succeeded but no invoice returned:",
+          result
         );
-        router.push("/admin/invoices");
+        alert(
+          "Conversion succeeded but invoice details are missing. Check console for details."
+        );
+        // Don't redirect yet, let's see what's in the result
       }
     } catch (err) {
-      console.error("Error converting to invoice:", err);
+      console.error("💥 CONVERSION ERROR:", err);
+      console.error("📊 Error details:", {
+        message: err instanceof Error ? err.message : "Unknown error",
+        stack: err instanceof Error ? err.stack : undefined,
+        quotationId,
+        quotation: quotation
+          ? {
+              id: quotation.id,
+              status: quotation.status,
+              client_id: quotation.client_id,
+            }
+          : "null",
+      });
+
       alert(
-        err instanceof Error ? err.message : "Failed to convert to invoice"
+        `Conversion failed: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
       );
     }
   };
