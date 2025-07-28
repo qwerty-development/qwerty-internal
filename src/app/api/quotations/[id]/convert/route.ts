@@ -165,17 +165,53 @@ export async function POST(
       );
     }
 
-    // Get next invoice number
-    const { data: lastInvoice } = await supabase
+    // Get next invoice number by finding the highest numeric value
+    const { data: allInvoices } = await supabase
       .from("invoices")
-      .select("invoice_number")
-      .order("invoice_number", { ascending: false })
-      .limit(1);
+      .select("invoice_number");
 
-    let invoiceNumber = "INV-0001";
-    if (lastInvoice && lastInvoice.length > 0) {
-      const lastNumber = parseInt(lastInvoice[0].invoice_number.split("-")[1]);
-      invoiceNumber = `INV-${String(lastNumber + 1).padStart(4, "0")}`;
+    let nextNumber = 1;
+    if (allInvoices && allInvoices.length > 0) {
+      // Extract all numeric parts and find the maximum
+      const numbers = allInvoices
+        .map((invoice) => {
+          const match = invoice.invoice_number.match(/INV-(\d+)/);
+          return match ? parseInt(match[1]) : 0;
+        })
+        .filter((num) => num > 0);
+
+      if (numbers.length > 0) {
+        nextNumber = Math.max(...numbers) + 1;
+      }
+    }
+
+    // Generate unique invoice number, with fallback retry logic
+    let invoiceNumber = `INV-${String(nextNumber).padStart(4, "0")}`;
+    let attempts = 0;
+    const maxAttempts = 100;
+
+    // Check if the generated number already exists and increment if needed
+    while (attempts < maxAttempts) {
+      const { data: existingInvoice } = await supabase
+        .from("invoices")
+        .select("id")
+        .eq("invoice_number", invoiceNumber)
+        .single();
+
+      if (!existingInvoice) {
+        break; // Found a unique number
+      }
+
+      nextNumber++;
+      invoiceNumber = `INV-${String(nextNumber).padStart(4, "0")}`;
+      attempts++;
+    }
+
+    if (attempts >= maxAttempts) {
+      return NextResponse.json(
+        { error: "Unable to generate unique invoice number" },
+        { status: 500 }
+      );
     }
 
     // Create invoice
