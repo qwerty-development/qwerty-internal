@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { generateReceiptPDF } from "@/utils/pdfGenerator";
 import Link from "next/link";
 import {
   RefreshCw,
@@ -150,6 +151,24 @@ export default function ReceiptsPage() {
   // Function to format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
+  };
+
+  // Function to handle PDF generation
+  const handleGeneratePDF = async (receiptId: string) => {
+    setGeneratingPDFs(prev => new Set(prev).add(receiptId));
+    try {
+      await generateReceiptPDF(receiptId);
+      alert("PDF generated successfully!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setGeneratingPDFs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(receiptId);
+        return newSet;
+      });
+    }
   };
 
   // Filter receipts based on search and payment method
@@ -516,12 +535,7 @@ export default function ReceiptsPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => {
-                          // TODO: Implement PDF generation for receipts
-                          alert(
-                            "PDF generation for receipts will be implemented in the next step"
-                          );
-                        }}
+                        onClick={() => handleGeneratePDF(receipt.id)}
                         disabled={generatingPDFs.has(receipt.id)}
                         className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 disabled:bg-blue-25 disabled:text-blue-400 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
                       >

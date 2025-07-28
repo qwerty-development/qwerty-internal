@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { generateReceiptPDF } from "@/utils/pdfGenerator";
 import Link from "next/link";
 import { ArrowLeft, Download, User, FileText, Calendar, DollarSign, CreditCard, Eye } from "lucide-react";
 
@@ -97,8 +98,8 @@ export default function ReceiptDetailPage() {
   const handleGeneratePDF = async () => {
     setIsGeneratingPDF(true);
     try {
-      // TODO: Implement PDF generation for receipts
-      alert("PDF generation for receipts will be implemented in the next step");
+      await generateReceiptPDF(receiptId);
+      alert("PDF generated successfully!");
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Please try again.");

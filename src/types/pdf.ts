@@ -74,6 +74,37 @@ export interface InvoicePDFData {
   }>;
 }
 
+export interface ReceiptPDFData {
+  success: boolean;
+  pdfHtml: string;
+  receipt: {
+    id: string;
+    receipt_number: string;
+    payment_date: string;
+    amount: number;
+    payment_method: string;
+    created_at: string;
+  };
+  client: {
+    id: string;
+    name: string;
+    contact_email?: string;
+    contact_phone?: string;
+    address?: string;
+  };
+  invoice: {
+    id: string;
+    invoice_number: string;
+    total_amount: number;
+    amount_paid: number;
+    balance_due: number;
+    status: string;
+    issue_date: string;
+    due_date: string;
+    description?: string;
+  };
+}
+
 export interface PDFGenerationError {
   success: false;
   error: string;
