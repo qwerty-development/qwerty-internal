@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Quote,
   Bell,
+  Palette,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -596,6 +597,21 @@ export default function HomePage() {
                   <p className="font-semibold">View All Quotations</p>
                   <p className="text-sm text-indigo-200">
                     Manage quotations and track status
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                href="/admin/branding"
+                className="flex items-center p-4 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-xl hover:from-rose-600 hover:to-pink-500 transition-all duration-200 transform hover:scale-105 shadow-lg"
+              >
+                <div className="p-2 bg-white/20 rounded-lg mr-4">
+                  <Palette className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-semibold">PDF Branding Settings</p>
+                  <p className="text-sm text-pink-200">
+                    Customize company branding for all PDFs
                   </p>
                 </div>
               </Link>
