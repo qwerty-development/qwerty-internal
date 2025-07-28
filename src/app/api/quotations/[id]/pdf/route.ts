@@ -117,13 +117,13 @@ function generateQuotationPDF(quotation: any, items: any[]) {
         .header {
           text-align: center;
           margin-bottom: 30px;
-          border-bottom: 2px solid #2563eb;
+          border-bottom: 2px solid #059669;
           padding-bottom: 20px;
         }
         .company-name {
           font-size: 24px;
           font-weight: bold;
-          color: #2563eb;
+          color: #059669;
           margin-bottom: 5px;
         }
         .document-type {
@@ -148,7 +148,7 @@ function generateQuotationPDF(quotation: any, items: any[]) {
           font-size: 16px;
           font-weight: bold;
           margin-bottom: 10px;
-          color: #2563eb;
+          color: #059669;
           border-bottom: 1px solid #e5e7eb;
           padding-bottom: 5px;
         }
@@ -184,7 +184,7 @@ function generateQuotationPDF(quotation: any, items: any[]) {
         .item-number {
           text-align: center;
           font-weight: bold;
-          color: #2563eb;
+          color: #059669;
         }
         .item-title {
           font-weight: bold;
@@ -207,8 +207,8 @@ function generateQuotationPDF(quotation: any, items: any[]) {
         .description {
           margin: 20px 0;
           padding: 15px;
-          background-color: #f8fafc;
-          border-left: 4px solid #2563eb;
+          background-color: #f0fdf4;
+          border-left: 4px solid #059669;
         }
         .footer {
           margin-top: 40px;
@@ -235,7 +235,7 @@ function generateQuotationPDF(quotation: any, items: any[]) {
     </head>
     <body>
       <div class="header">
-        <div class="company-name">Your Company Name</div>
+        <div class="company-name">QWERTY</div>
         <div class="document-type">QUOTATION</div>
         <div class="quotation-number">${quotation.quotation_number}</div>
       </div>
