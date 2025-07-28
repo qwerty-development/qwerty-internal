@@ -1,18 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface QuotationItem {
+  id?: string;
+  position: number;
   title: string;
   description: string;
   price: number;
 }
 
-export default function NewQuotationPage() {
+interface Quotation {
+  id: string;
+  quotation_number: string;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
+  client_contact_email: string;
+  client_contact_phone: string;
+  client_address: string;
+  client_notes: string;
+  description: string;
+  total_amount: number;
+  issue_date: string;
+  due_date: string | null;
+  quotation_issue_date: string;
+  quotation_due_date: string | null;
+  status: string;
+  uses_items: boolean;
+}
+
+export default function EditQuotationPage() {
+  const params = useParams();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const quotationId = params.id as string;
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -27,20 +53,74 @@ export default function NewQuotationPage() {
 
     // Quotation Details
     description: "",
-    quotationIssueDate: new Date().toISOString().split("T")[0],
-    quotationDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0],
+    quotationIssueDate: "",
+    quotationDueDate: "",
   });
 
   const [items, setItems] = useState<QuotationItem[]>([
-    { title: "", description: "", price: 0 },
+    { position: 1, title: "", description: "", price: 0 },
   ]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Calculate total amount from items
   const totalAmount = items.reduce((sum, item) => sum + (item.price || 0), 0);
+
+  // Fetch quotation data
+  useEffect(() => {
+    const fetchQuotation = async () => {
+      try {
+        const response = await fetch(`/api/quotations/${quotationId}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch quotation");
+        }
+        const quotation: Quotation = await response.json();
+
+        setFormData({
+          clientName: quotation.client_name || "",
+          clientEmail: quotation.client_email || "",
+          clientPhone: quotation.client_phone || "",
+          clientContactEmail: quotation.client_contact_email || "",
+          clientContactPhone: quotation.client_contact_phone || "",
+          clientAddress: quotation.client_address || "",
+          clientNotes: quotation.client_notes || "",
+          description: quotation.description || "",
+          quotationIssueDate:
+            quotation.quotation_issue_date || quotation.issue_date || "",
+          quotationDueDate:
+            quotation.quotation_due_date || quotation.due_date || "",
+        });
+
+        // Fetch items if quotation uses items
+        if (quotation.uses_items) {
+          const itemsResponse = await fetch(
+            `/api/quotations/${quotationId}/items`
+          );
+          if (itemsResponse.ok) {
+            const fetchedItems = await itemsResponse.json();
+            if (Array.isArray(fetchedItems) && fetchedItems.length > 0) {
+              setItems(
+                fetchedItems.map((item: any) => ({
+                  id: item.id,
+                  position: item.position,
+                  title: item.title,
+                  description: item.description || "",
+                  price: item.price,
+                }))
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching quotation:", err);
+        setError("Failed to load quotation");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchQuotation();
+  }, [quotationId]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -131,7 +211,10 @@ export default function NewQuotationPage() {
   };
 
   const addItem = () => {
-    setItems((prev) => [...prev, { title: "", description: "", price: 0 }]);
+    setItems((prev) => [
+      ...prev,
+      { position: prev.length + 1, title: "", description: "", price: 0 },
+    ]);
   };
 
   const removeItem = (index: number) => {
@@ -153,12 +236,13 @@ export default function NewQuotationPage() {
       return;
     }
 
-    setIsLoading(true);
+    setIsSaving(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/quotations", {
-        method: "POST",
+      // Update quotation details
+      const response = await fetch(`/api/quotations/${quotationId}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -176,42 +260,86 @@ export default function NewQuotationPage() {
           description: formData.description.trim(),
           quotationIssueDate: formData.quotationIssueDate,
           quotationDueDate: formData.quotationDueDate || undefined,
-          items: items.filter((item) => item.title.trim()), // Only include items with titles
         }),
       });
 
-      const result = await response.json();
-
-      if (result.success) {
-        router.push("/admin/quotations");
-      } else {
-        setError(result.error || "Failed to create quotation");
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || "Failed to update quotation");
       }
+
+      // Update items
+      const itemsToSave = items.filter((item) => item.title.trim());
+      const itemsResponse = await fetch(
+        `/api/quotations/${quotationId}/items`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(itemsToSave),
+        }
+      );
+
+      if (!itemsResponse.ok) {
+        const result = await itemsResponse.json();
+        throw new Error(result.error || "Failed to update items");
+      }
+
+      router.push(`/admin/quotations/${quotationId}`);
     } catch (err) {
-      setError("An unexpected error occurred");
-      console.error("Error creating quotation:", err);
+      setError(
+        err instanceof Error ? err.message : "An unexpected error occurred"
+      );
+      console.error("Error updating quotation:", err);
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-12">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading quotation...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Error Loading Quotation
+          </h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <Link
+            href="/admin/quotations"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Back to Quotations
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
         <div className="flex items-center mb-4">
           <Link
-            href="/admin/quotations"
+            href={`/admin/quotations/${quotationId}`}
             className="text-blue-600 hover:text-blue-800 mr-4"
           >
-            ← Back to Quotations
+            ← Back to Quotation
           </Link>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          Create New Quotation
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Create a comprehensive quotation with client and invoice details
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900">Edit Quotation</h1>
+        <p className="text-gray-600 mt-2">Update quotation details and items</p>
       </div>
 
       <div className="bg-white rounded-lg shadow-md border p-6">
@@ -597,17 +725,17 @@ export default function NewQuotationPage() {
           {/* Form Actions */}
           <div className="flex justify-end space-x-4 pt-6 border-t">
             <Link
-              href="/admin/quotations"
+              href={`/admin/quotations/${quotationId}`}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Cancel
             </Link>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSaving}
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? "Creating..." : "Create Quotation"}
+              {isSaving ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>

@@ -200,6 +200,12 @@ export default function AdminTicketsPage() {
           icon: Clock,
           label: "Pending",
         };
+      default:
+        return {
+          className: "bg-gray-100 text-gray-800 border border-gray-200",
+          icon: Clock,
+          label: "Unknown",
+        };
     }
   };
 
@@ -405,7 +411,7 @@ export default function AdminTicketsPage() {
               ) : (
                 filteredTickets.map((ticket) => {
                   const statusConfig = getStatusConfig(ticket.status);
-                  const StatusIcon = statusConfig.icon;
+                  const StatusIcon = statusConfig?.icon || Clock;
 
                   return (
                     <tr key={ticket.id} className="hover:bg-gray-50">
@@ -454,10 +460,10 @@ export default function AdminTicketsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${statusConfig.className}`}
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${statusConfig?.className || "bg-gray-100 text-gray-800 border border-gray-200"}`}
                         >
                           <StatusIcon className="w-3 h-3 mr-1" />
-                          {statusConfig.label}
+                          {statusConfig?.label || "Unknown"}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

@@ -354,7 +354,7 @@ export default function HomePage() {
 
       {/* Statistics Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 transform hover:scale-105 transition-all duration-200">
             <div className="flex items-center">
               <div className="p-3 bg-gradient-to-br from-[#01303F] to-[#014a5f] rounded-xl">
