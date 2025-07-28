@@ -32,7 +32,7 @@ const TicketList: React.FC<Props> = ({ tickets }) => {
     switch (status.toLowerCase()) {
       case "approved":
         return {
-          className: "bg-green-100 text-green-800 border border-green-200",
+          className: "bg-green-100  text-green-800 border border-green-200",
           icon: CheckCircle,
           label: "Approved",
         };
