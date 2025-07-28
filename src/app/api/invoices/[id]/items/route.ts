@@ -25,11 +25,11 @@ interface InvoiceItemData {
 // GET: Fetch all items for an invoice
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createServiceClient();
-    const invoiceId = params.id;
+    const { id: invoiceId } = await params;
 
     // Get the current authenticated user
     const supabaseServer = await createServerClient();
@@ -74,12 +74,12 @@ export async function GET(
 // POST: Add multiple items to an invoice (replaces all existing items)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { items }: { items: InvoiceItemData[] } = await request.json();
     const supabase = createServiceClient();
-    const invoiceId = params.id;
+    const { id: invoiceId } = await params;
 
     // Get the current authenticated user
     const supabaseServer = await createServerClient();

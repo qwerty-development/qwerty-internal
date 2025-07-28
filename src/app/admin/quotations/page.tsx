@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { generateQuotationPDF } from "@/utils/pdfGenerator";
 import Link from "next/link";
 import {
   RefreshCw,
@@ -19,6 +20,7 @@ import {
   DollarSign,
   Calendar,
   User,
+  Download,
   type LucideIcon,
 } from "lucide-react";
 
@@ -55,6 +57,7 @@ export default function QuotationsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatingPDFs, setGeneratingPDFs] = useState<Set<string>>(new Set());
 
   // Filtering and search state with stricter types
   const [statusFilter, setStatusFilter] = useState<QuotationStatus | "all">(
@@ -239,6 +242,23 @@ export default function QuotationsPage() {
   };
 
   // Function to convert quotation to invoice
+  const handleGeneratePDF = async (quotationId: string) => {
+    setGeneratingPDFs(prev => new Set(prev).add(quotationId));
+    try {
+      await generateQuotationPDF(quotationId);
+      alert("PDF generated successfully!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setGeneratingPDFs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(quotationId);
+        return newSet;
+      });
+    }
+  };
+
   const convertQuotationToInvoice = async (quotationId: string) => {
     try {
       console.log("🚀 Converting quotation to invoice:", quotationId);
@@ -612,6 +632,14 @@ export default function QuotationsPage() {
                             <Eye className="w-3 h-3" />
                             View
                           </Link>
+                          <button
+                            onClick={() => handleGeneratePDF(quotation.id)}
+                            disabled={generatingPDFs.has(quotation.id)}
+                            className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 disabled:bg-blue-25 disabled:text-blue-400 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                          >
+                            <Download className="w-3 h-3" />
+                            {generatingPDFs.has(quotation.id) ? "Generating..." : "PDF"}
+                          </button>
                           <Link
                             href={`/admin/quotations/${quotation.id}/edit`}
                             className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition-colors flex items-center gap-1"

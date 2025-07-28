@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { generateQuotationPDF } from "@/utils/pdfGenerator";
 import {
   ArrowLeft,
   Edit,
@@ -19,6 +20,7 @@ import {
   Phone,
   Plus,
   Eye,
+  Download,
   type LucideIcon,
 } from "lucide-react";
 
@@ -73,6 +75,7 @@ export default function QuotationDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [showClientAssignment, setShowClientAssignment] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Fetch quotation details
   const fetchQuotation = async () => {
@@ -199,6 +202,20 @@ export default function QuotationDetailPage() {
     } catch (err) {
       console.error("Error assigning to client:", err);
       alert("Failed to assign to client");
+    }
+  };
+
+  // Generate PDF
+  const handleGeneratePDF = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      await generateQuotationPDF(quotationId);
+      alert("PDF generated successfully!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -436,6 +453,14 @@ export default function QuotationDetailPage() {
               <Edit className="w-4 h-4" />
               Edit
             </Link>
+            <button
+              onClick={handleGeneratePDF}
+              disabled={isGeneratingPDF}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              {isGeneratingPDF ? "Generating..." : "Generate PDF"}
+            </button>
             {quotation.status === "Draft" && (
               <button
                 onClick={() => updateStatus("Sent")}
@@ -465,6 +490,15 @@ export default function QuotationDetailPage() {
           </div>
 
           <div className="flex gap-2">
+            <button
+              onClick={handleGeneratePDF}
+              disabled={isGeneratingPDF}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-3 py-1 rounded-md text-sm transition-colors flex items-center gap-1"
+            >
+              <Download className="w-3 h-3" />
+              {isGeneratingPDF ? "Generating..." : "PDF"}
+            </button>
+            
             {quotation.status === "Sent" && (
               <>
                 <button

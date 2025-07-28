@@ -5,9 +5,10 @@ import { NextRequest, NextResponse } from "next/server";
 // GET /api/quotations/[id] - Fetch quotation details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: quotationId } = await params;
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -40,7 +41,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const quotationId = params.id;
+
 
     // Fetch quotation details
     const { data: quotation, error } = await supabase
@@ -70,9 +71,10 @@ export async function GET(
 // PUT /api/quotations/[id] - Update quotation details
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: quotationId } = await params;
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -105,7 +107,7 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const quotationId = params.id;
+
     const updateData = await request.json();
 
     // Validate required fields

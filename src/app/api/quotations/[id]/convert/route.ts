@@ -4,22 +4,23 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log("🚀 CONVERSION API CALLED - START");
-  console.log("🆔 Quotation ID:", params.id);
-  console.log("🆔 Quotation ID length:", params.id?.length);
-  console.log("🆔 Quotation ID type:", typeof params.id);
-  console.log("📡 Request method:", request.method);
-  console.log("📡 Request URL:", request.url);
-  console.log(
-    "📡 Request headers:",
-    Object.fromEntries(request.headers.entries())
-  );
-
   try {
+    const { id: quotationId } = await params;
+    console.log("🚀 CONVERSION API CALLED - START");
+    console.log("🆔 Quotation ID:", quotationId);
+    console.log("🆔 Quotation ID length:", quotationId?.length);
+    console.log("🆔 Quotation ID type:", typeof quotationId);
+    console.log("📡 Request method:", request.method);
+    console.log("📡 Request URL:", request.url);
+    console.log(
+      "📡 Request headers:",
+      Object.fromEntries(request.headers.entries())
+    );
+
     console.log("🚀 CONVERSION API CALLED - INSIDE TRY");
-    console.log("🆔 Quotation ID:", params.id);
+    console.log("🆔 Quotation ID:", quotationId);
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,7 +56,6 @@ export async function POST(
     }
 
     console.log("✅ Authenticated user:", session.user.id);
-    const quotationId = params.id;
 
     // Validate quotation ID
     console.log("🔍 Validating quotation ID:", quotationId);
