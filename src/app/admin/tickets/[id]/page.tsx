@@ -11,7 +11,18 @@ import {
   FileText,
   CheckCircle,
   XCircle,
+  Hammer,
+  Archive,
+  Clock,
 } from "lucide-react";
+
+type TicketStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "declined" // alias for backward compatibility
+  | "working on it"
+  | "closed";
 
 interface Ticket {
   id: string;
@@ -19,7 +30,7 @@ interface Ticket {
   description: string;
   page: string;
   file_url: string | null;
-  status: "pending" | "approved" | "declined";
+  status: TicketStatus;
   created_at: string;
   clients: {
     name: string;
@@ -95,7 +106,7 @@ export default function TicketDetailPage() {
     }
   };
 
-  const updateStatus = async (status: "approved" | "declined") => {
+  const updateStatus = async (status: TicketStatus) => {
     if (!ticket) return;
 
     try {
@@ -131,24 +142,33 @@ export default function TicketDetailPage() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "approved":
         return "bg-green-100 text-green-800 border-green-200";
+      case "rejected":
       case "declined":
         return "bg-red-100 text-red-800 border-red-200";
+      case "working on it":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "closed":
+        return "bg-gray-200 text-gray-800 border-gray-300";
       default:
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
     }
   };
-
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "approved":
         return <CheckCircle className="w-4 h-4" />;
+      case "rejected":
       case "declined":
         return <XCircle className="w-4 h-4" />;
+      case "working on it":
+        return <Hammer className="w-4 h-4" />;
+      case "closed":
+        return <Archive className="w-4 h-4" />;
       default:
-        return <FileText className="w-4 h-4" />;
+        return <Clock className="w-4 h-4" />;
     }
   };
 
@@ -291,32 +311,33 @@ export default function TicketDetailPage() {
               </div>
             )}
 
-            {/* Status Actions */}
-            {ticket.status === "pending" && (
-              <div className="border-t border-gray-200 pt-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-4">
-                  Update Status
-                </h3>
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => updateStatus("approved")}
-                    disabled={updating}
-                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    {updating ? "Updating..." : "Approve"}
-                  </button>
-                  <button
-                    onClick={() => updateStatus("declined")}
-                    disabled={updating}
-                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    {updating ? "Updating..." : "Decline"}
-                  </button>
-                </div>
+            {/* Status Management */}
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-4">
+                Update Status
+              </h3>
+              <div className="flex items-center gap-3">
+                <select
+                  value={ticket.status}
+                  onChange={(e) => updateStatus(e.target.value as TicketStatus)}
+                  disabled={updating}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 capitalize"
+                >
+                  {[
+                    "pending",
+                    "approved",
+                    "rejected",
+                    "working on it",
+                    "closed",
+                  ].map((statusOpt) => (
+                    <option key={statusOpt} value={statusOpt} className="capitalize">
+                      {statusOpt}
+                    </option>
+                  ))}
+                </select>
+                {updating && <span className="text-sm text-gray-500">Saving...</span>}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

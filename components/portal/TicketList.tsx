@@ -6,6 +6,8 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Hammer,
+  Archive,
   Download,
 } from "lucide-react";
 
@@ -27,24 +29,37 @@ interface Props {
 
 const TicketList: React.FC<Props> = ({ tickets }) => {
   const getStatusConfig = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "approved":
         return {
-          className:
-            "bg-green-100 text-green-800 border border-green-200",
+          className: "bg-green-100 text-green-800 border border-green-200",
           icon: CheckCircle,
           label: "Approved",
         };
+      case "rejected":
       case "declined":
         return {
           className: "bg-red-100 text-red-800 border border-red-200",
           icon: XCircle,
-          label: "Declined",
+          label: "Rejected",
+        };
+      case "working on it":
+      case "working":
+      case "in progress":
+        return {
+          className: "bg-blue-100 text-blue-800 border border-blue-200",
+          icon: Hammer,
+          label: "Working on it",
+        };
+      case "closed":
+        return {
+          className: "bg-gray-200 text-gray-800 border border-gray-300",
+          icon: Archive,
+          label: "Closed",
         };
       default:
         return {
-          className:
-            "bg-yellow-100 text-yellow-800 border border-yellow-200",
+          className: "bg-yellow-100 text-yellow-800 border border-yellow-200",
           icon: Clock,
           label: "Pending",
         };
@@ -78,7 +93,7 @@ const TicketList: React.FC<Props> = ({ tickets }) => {
               return (
                 <div
                   key={ticket.id}
-                  className="p-6 rounded-xl bg-white/10 backdrop-blur border border-white/20 hover:bg-white/20 transition-all duration-300 group/item"
+                  className="p-6 rounded-xl bg-white/10 backdrop-blur border border-black hover:bg-white/20 transition-all duration-300 group/item"
                 >
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="font-semibold text-lg text-secondary-800 group-hover/item:text-primary-600 transition-colors">
