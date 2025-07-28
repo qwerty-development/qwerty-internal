@@ -17,10 +17,11 @@ const createServiceClient = () => {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log("Receipts API: Fetching receipt with ID:", params.id);
+    const { id } = await params;
+    console.log("Receipts API: Fetching receipt with ID:", id);
 
     const supabase = createServiceClient();
     console.log("Receipts API: Service client created successfully");
@@ -51,7 +52,7 @@ export async function GET(
         )
       `
       )
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (receiptError) {
