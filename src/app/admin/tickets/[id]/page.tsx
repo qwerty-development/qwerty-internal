@@ -20,7 +20,7 @@ type TicketStatus =
   | "pending"
   | "approved"
   | "rejected"
-  | "declined" // alias for backward compatibility
+  | "declined" 
   | "working on it"
   | "closed";
 
