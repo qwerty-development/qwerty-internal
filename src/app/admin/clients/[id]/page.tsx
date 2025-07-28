@@ -8,6 +8,7 @@ import {
   deleteClientCompletely,
   getClientDeletionSummary,
 } from "@/utils/clientDeletion";
+import { getClientPassword } from "@/utils/passwordOperations";
 import DeleteClientDialog from "@/components/DeleteClientDialog";
 
 export default function ClientDetailPage() {
@@ -24,6 +25,13 @@ export default function ClientDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletionSummary, setDeletionSummary] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(
+    null
+  );
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -79,8 +87,8 @@ export default function ClientDetailPage() {
 
   const handleDeleteClick = async () => {
     setShowDeleteDialog(true);
-          try {
-        const summaryResult = await getClientDeletionSummary(clientId);
+    try {
+      const summaryResult = await getClientDeletionSummary(clientId);
       if (summaryResult.success && summaryResult.summary) {
         setDeletionSummary(summaryResult.summary);
       } else {
@@ -115,6 +123,51 @@ export default function ClientDetailPage() {
   const handleDeleteCancel = () => {
     setShowDeleteDialog(false);
     setDeletionSummary(null);
+  };
+
+  const handleGetPassword = async () => {
+    setPasswordLoading(true);
+    setPasswordError(null);
+    setPasswordSuccess(null);
+    setGeneratedPassword(null);
+
+    try {
+      const result = await getClientPassword(clientId);
+
+      if (result.success) {
+        setGeneratedPassword(result.password || null);
+        setPasswordSuccess(
+          result.message || "Password retrieved successfully!"
+        );
+        setShowPasswordDialog(true);
+      } else {
+        setPasswordError(result.error || "Failed to get password");
+      }
+    } catch (error) {
+      console.error("Password retrieval error:", error);
+      setPasswordError("An unexpected error occurred");
+    }
+
+    setPasswordLoading(false);
+  };
+
+  const copyToClipboard = async () => {
+    if (generatedPassword) {
+      try {
+        await navigator.clipboard.writeText(generatedPassword);
+        setPasswordSuccess("Password copied to clipboard!");
+        setTimeout(() => setPasswordSuccess(null), 2000);
+      } catch (err) {
+        setPasswordError("Failed to copy password");
+      }
+    }
+  };
+
+  const closePasswordDialog = () => {
+    setShowPasswordDialog(false);
+    setGeneratedPassword(null);
+    setPasswordError(null);
+    setPasswordSuccess(null);
   };
 
   if (loading) {
@@ -224,6 +277,61 @@ export default function ClientDetailPage() {
                 {client.address || "Not provided"}
               </p>
             </div>
+          </div>
+
+          {/* Password Management Section */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Client Access
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Copy the original password for this client
+                </p>
+              </div>
+              <button
+                onClick={handleGetPassword}
+                disabled={passwordLoading}
+                className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              >
+                {passwordLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Copy Password
+                  </>
+                )}
+              </button>
+            </div>
+
+            {passwordError && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{passwordError}</p>
+              </div>
+            )}
+
+            {passwordSuccess && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-sm text-green-600">{passwordSuccess}</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -451,6 +559,87 @@ export default function ClientDetailPage() {
         summary={deletionSummary}
         loading={deleting}
       />
+
+      {/* Password Dialog */}
+      {showPasswordDialog && generatedPassword && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Client Password
+                </h3>
+                <button
+                  onClick={closePasswordDialog}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-3">
+                  This is the original password generated for this client.
+                  Please copy it and share it securely with the client.
+                </p>
+
+                <div className="bg-gray-50 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Original Password
+                    </label>
+                    <button
+                      onClick={copyToClipboard}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                      Copy
+                    </button>
+                  </div>
+                  <div className="bg-white p-3 rounded border border-gray-300">
+                    <code className="text-sm font-mono text-gray-900 break-all">
+                      {generatedPassword}
+                    </code>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={closePasswordDialog}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

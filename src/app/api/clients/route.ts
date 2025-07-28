@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { generateRandomPassword } from "@/utils/passwordGenerator";
+import { storePassword } from "@/utils/passwordCache";
 
 // Create a service role client for admin operations
 const createServiceClient = () => {
@@ -65,16 +66,20 @@ export async function POST(request: NextRequest) {
     const password = generateRandomPassword(12);
 
     // Create Supabase Auth user
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-      email: clientData.email.trim(),
-      password: password,
-      email_confirm: true,
-    });
+    const { data: authUser, error: authError } =
+      await supabase.auth.admin.createUser({
+        email: clientData.email.trim(),
+        password: password,
+        email_confirm: true,
+      });
 
     if (authError) {
       console.error("Auth user creation error:", authError);
       return NextResponse.json(
-        { success: false, error: `Failed to create user: ${authError.message}` },
+        {
+          success: false,
+          error: `Failed to create user: ${authError.message}`,
+        },
         { status: 400 }
       );
     }
@@ -103,7 +108,10 @@ export async function POST(request: NextRequest) {
       await supabase.auth.admin.deleteUser(authUser.user.id);
       console.error("User profile creation error:", userError);
       return NextResponse.json(
-        { success: false, error: `Failed to create user profile: ${userError.message}` },
+        {
+          success: false,
+          error: `Failed to create user profile: ${userError.message}`,
+        },
         { status: 400 }
       );
     }
@@ -128,10 +136,16 @@ export async function POST(request: NextRequest) {
       await supabase.from("users").delete().eq("id", authUser.user.id);
       console.error("Client creation error:", clientError);
       return NextResponse.json(
-        { success: false, error: `Failed to create client: ${clientError.message}` },
+        {
+          success: false,
+          error: `Failed to create client: ${clientError.message}`,
+        },
         { status: 400 }
       );
     }
+
+    // Store the password in cache for later retrieval
+    storePassword(client.id, password, clientData.email.trim());
 
     return NextResponse.json({
       success: true,
@@ -145,7 +159,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
         message: "Failed to create client",
       },
       { status: 500 }
