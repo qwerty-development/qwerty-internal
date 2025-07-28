@@ -5,9 +5,10 @@ import { NextRequest, NextResponse } from "next/server";
 // GET /api/quotations/[id]/items - Fetch quotation items
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: quotationId } = await params;
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -40,7 +41,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const quotationId = params.id;
+
 
     // Fetch quotation items ordered by position
     const { data: items, error } = await supabase
@@ -70,9 +71,10 @@ export async function GET(
 // POST /api/quotations/[id]/items - Update quotation items (replaces all items)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: quotationId } = await params;
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -105,7 +107,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const quotationId = params.id;
+
     const items = await request.json();
 
     // Validate items array
