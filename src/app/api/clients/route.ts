@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { generateRandomPassword } from "@/utils/passwordGenerator";
 
 // Create a service role client for admin operations
 const createServiceClient = () => {
@@ -21,6 +22,135 @@ interface ClientUpdateData {
   contact_phone?: string;
   address?: string;
   notes?: string;
+}
+
+interface ClientCreateData {
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const clientData: ClientCreateData = await request.json();
+    const supabase = createServiceClient();
+
+    // Validate required fields
+    if (!clientData.name?.trim()) {
+      return NextResponse.json(
+        { success: false, error: "Name is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!clientData.email?.trim()) {
+      return NextResponse.json(
+        { success: false, error: "Email is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(clientData.email.trim())) {
+      return NextResponse.json(
+        { success: false, error: "Please enter a valid email address" },
+        { status: 400 }
+      );
+    }
+
+    // Generate a random password
+    const password = generateRandomPassword(12);
+
+    // Create Supabase Auth user
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email: clientData.email.trim(),
+      password: password,
+      email_confirm: true,
+    });
+
+    if (authError) {
+      console.error("Auth user creation error:", authError);
+      return NextResponse.json(
+        { success: false, error: `Failed to create user: ${authError.message}` },
+        { status: 400 }
+      );
+    }
+
+    if (!authUser.user) {
+      return NextResponse.json(
+        { success: false, error: "Failed to create auth user" },
+        { status: 500 }
+      );
+    }
+
+    // Create user profile in users table
+    const { data: userProfile, error: userError } = await supabase
+      .from("users")
+      .insert({
+        id: authUser.user.id,
+        name: clientData.name.trim(),
+        phone: clientData.phone?.trim() || null,
+        role: "client",
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      // Rollback: delete the auth user
+      await supabase.auth.admin.deleteUser(authUser.user.id);
+      console.error("User profile creation error:", userError);
+      return NextResponse.json(
+        { success: false, error: `Failed to create user profile: ${userError.message}` },
+        { status: 400 }
+      );
+    }
+
+    // Create client record
+    const { data: client, error: clientError } = await supabase
+      .from("clients")
+      .insert({
+        name: clientData.name.trim(),
+        contact_email: clientData.email.trim(),
+        contact_phone: clientData.phone?.trim() || null,
+        address: clientData.address?.trim() || null,
+        notes: clientData.notes?.trim() || null,
+        user_id: authUser.user.id,
+      })
+      .select()
+      .single();
+
+    if (clientError) {
+      // Rollback: delete both auth user and user profile
+      await supabase.auth.admin.deleteUser(authUser.user.id);
+      await supabase.from("users").delete().eq("id", authUser.user.id);
+      console.error("Client creation error:", clientError);
+      return NextResponse.json(
+        { success: false, error: `Failed to create client: ${clientError.message}` },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      client,
+      user: userProfile,
+      password,
+      message: "Client created successfully!",
+    });
+  } catch (error) {
+    console.error("Client creation error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error occurred",
+        message: "Failed to create client",
+      },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PUT(

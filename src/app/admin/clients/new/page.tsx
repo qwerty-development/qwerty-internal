@@ -47,6 +47,14 @@ export default function NewClientPage() {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.contact_email.trim())) {
+      setError("Please enter a valid email address");
+      setLoading(false);
+      return;
+    }
+
     try {
       const result = await createClientUser({
         name: form.name,
@@ -125,7 +133,7 @@ export default function NewClientPage() {
         </div>
         <div>
           <label className="block text-sm font-semibold text-qwerty mb-2">
-            Contact Email
+            Contact Email *
           </label>
           <input
             name="contact_email"
@@ -134,6 +142,7 @@ export default function NewClientPage() {
             value={form.contact_email}
             onChange={handleChange}
             placeholder="Email address"
+            required
           />
         </div>
         <div>
