@@ -249,6 +249,159 @@ export function generateBrandingCSS(branding: BrandingSettings): string {
     .status-paid { background-color: #d1fae5; color: #065f46; }
     .status-partially_paid { background-color: #fef3c7; color: #92400e; }
     .status-unpaid { background-color: #fee2e2; color: #991b1b; }
+
+    /* Receipt-specific styles */
+    .receipt-main {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .payment-amount-section {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 30px;
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border-radius: 12px;
+      border: 2px solid #059669;
+    }
+    .payment-amount-label {
+      font-size: 14px;
+      font-weight: bold;
+      color: #059669;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .payment-amount {
+      font-size: 36px;
+      font-weight: bold;
+      color: #059669;
+      margin-bottom: 8px;
+    }
+    .payment-date {
+      font-size: 16px;
+      color: #666;
+      font-weight: 500;
+    }
+    .receipt-details {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    .detail-label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 14px;
+    }
+    .detail-value {
+      font-weight: 500;
+      color: #1f2937;
+      font-size: 14px;
+    }
+    .payment-method {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .client-section {
+      margin-bottom: 25px;
+    }
+    .client-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #1f2937;
+      margin-bottom: 8px;
+    }
+    .client-contact {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+    .client-address {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+    .invoice-reference {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+    }
+    .invoice-number {
+      font-size: 16px;
+      font-weight: bold;
+      color: #1f2937;
+      margin-bottom: 15px;
+    }
+    .invoice-details {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+    }
+    .invoice-label {
+      font-weight: 500;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .invoice-value {
+      font-weight: 600;
+      color: #1f2937;
+      font-size: 14px;
+    }
+    .balance-remaining {
+      color: #dc2626;
+    }
+    .balance-paid {
+      color: #059669;
+    }
+    .payment-confirmation {
+      text-align: center;
+      padding: 20px;
+      background: #f0fdf4;
+      border-radius: 8px;
+      border: 1px solid #bbf7d0;
+      margin-bottom: 25px;
+    }
+    .confirmation-text {
+      font-size: 18px;
+      font-weight: bold;
+      color: #059669;
+      margin-bottom: 10px;
+    }
+    .confirmation-details {
+      font-size: 14px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+    .notes-section {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .notes-content {
+      font-size: 14px;
+      color: #374151;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
   `;
 }
 

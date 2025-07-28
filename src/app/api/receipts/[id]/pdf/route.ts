@@ -176,156 +176,106 @@ async function generateReceiptPDFWithBranding(
 
   // Generate the content HTML
   const content = `
-    <div class="content">
-      <div class="client-info">
-        <div class="section-title">Payment From</div>
-        <div class="info-row">
-          <div class="label">Name</div>
-          <div class="value">${client.name}</div>
+    <div class="receipt-main">
+      <!-- Payment Amount - Most Prominent -->
+      <div class="payment-amount-section">
+        <div class="payment-amount-label">PAYMENT RECEIVED</div>
+        <div class="payment-amount">${formatCurrency(receipt.amount)}</div>
+        <div class="payment-date">${formatDate(receipt.payment_date)}</div>
+      </div>
+
+      <!-- Receipt Details -->
+      <div class="receipt-details">
+        <div class="detail-row">
+          <span class="detail-label">Receipt Number:</span>
+          <span class="detail-value">${receipt.receipt_number}</span>
         </div>
+        <div class="detail-row">
+          <span class="detail-label">Payment Method:</span>
+          <span class="detail-value payment-method">${
+            receipt.payment_method
+          }</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Date:</span>
+          <span class="detail-value">${formatDate(receipt.payment_date)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Time:</span>
+          <span class="detail-value">${new Date(
+            receipt.created_at
+          ).toLocaleTimeString()}</span>
+        </div>
+      </div>
+
+      <!-- Client Information -->
+      <div class="client-section">
+        <div class="section-title">PAID BY</div>
+        <div class="client-name">${client.name}</div>
         ${
           client.contact_email
-            ? `
-        <div class="info-row">
-          <div class="label">Email</div>
-          <div class="value">${client.contact_email}</div>
-        </div>
-        `
+            ? `<div class="client-contact">${client.contact_email}</div>`
             : ""
         }
         ${
           client.contact_phone
-            ? `
-        <div class="info-row">
-          <div class="label">Phone</div>
-          <div class="value">${client.contact_phone}</div>
-        </div>
-        `
+            ? `<div class="client-contact">${client.contact_phone}</div>`
             : ""
         }
         ${
           client.address
-            ? `
-        <div class="info-row">
-          <div class="label">Address</div>
-          <div class="value">${client.address}</div>
-        </div>
-        `
+            ? `<div class="client-address">${client.address}</div>`
             : ""
         }
       </div>
 
-      <div class="receipt-info">
-        <div class="section-title">Receipt Details</div>
-        <div class="info-row">
-          <div class="label">Receipt Number</div>
-          <div class="value">${receipt.receipt_number}</div>
+      <!-- Invoice Reference -->
+      <div class="invoice-reference">
+        <div class="section-title">FOR INVOICE</div>
+        <div class="invoice-number">${invoice.invoice_number}</div>
+        <div class="invoice-details">
+          <span class="invoice-label">Total:</span>
+          <span class="invoice-value">${formatCurrency(
+            invoice.total_amount
+          )}</span>
         </div>
-        <div class="info-row">
-          <div class="label">Payment Date</div>
-          <div class="value">${formatDate(receipt.payment_date)}</div>
-        </div>
-        <div class="info-row">
-          <div class="label">Payment Method</div>
-          <div class="value">
-            <span class="payment-method-badge ${getPaymentMethodColor(
-              receipt.payment_method
-            )}">${receipt.payment_method}</span>
-          </div>
-        </div>
-        <div class="info-row">
-          <div class="label">Amount Paid</div>
-          <div class="value" style="font-size: 18px; font-weight: bold; color: #059669;">
-            ${formatCurrency(receipt.amount)}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="invoice-info">
-      <div class="section-title">Related Invoice</div>
-      <div class="info-row">
-        <div class="label">Invoice Number</div>
-        <div class="value">${invoice.invoice_number}</div>
-      </div>
-      <div class="info-row">
-        <div class="label">Issue Date</div>
-        <div class="value">${formatDate(invoice.issue_date)}</div>
-      </div>
-      <div class="info-row">
-        <div class="label">Due Date</div>
-        <div class="value">${formatDate(invoice.due_date)}</div>
-      </div>
-      <div class="info-row">
-        <div class="label">Invoice Status</div>
-        <div class="value">
-          <span class="status-badge status-${invoice.status
-            .toLowerCase()
-            .replace(" ", "_")}">${invoice.status.toUpperCase()}</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="payment-summary">
-      <div class="section-title">Payment Summary</div>
-      <div style="display: flex; justify-content: space-between; margin: 10px 0;">
-        <div>
-          <div class="label">Invoice Total</div>
-          <div class="value">${formatCurrency(invoice.total_amount)}</div>
-        </div>
-        <div>
-          <div class="label">Amount Paid</div>
-          <div class="value amount-paid">${formatCurrency(
+        <div class="invoice-details">
+          <span class="invoice-label">Paid to Date:</span>
+          <span class="invoice-value">${formatCurrency(
             invoice.amount_paid || 0
-          )}</div>
+          )}</span>
         </div>
-        <div>
-          <div class="label">Balance Due</div>
-          <div class="value balance-due">${formatCurrency(
-            invoice.balance_due || 0
-          )}</div>
+        <div class="invoice-details">
+          <span class="invoice-label">Balance:</span>
+          <span class="invoice-value ${
+            invoice.balance_due > 0 ? "balance-remaining" : "balance-paid"
+          }">${formatCurrency(invoice.balance_due || 0)}</span>
         </div>
       </div>
-    </div>
 
-    <div class="payment-details">
-      <div class="section-title">Payment Details</div>
-      <table class="payment-details-table">
-        <tbody>
-          <tr>
-            <td class="label">Receipt Number</td>
-            <td class="value">${receipt.receipt_number}</td>
-          </tr>
-          <tr>
-            <td class="label">Payment Date</td>
-            <td class="value">${formatDate(receipt.payment_date)}</td>
-          </tr>
-          <tr>
-            <td class="label">Payment Method</td>
-            <td class="value">${receipt.payment_method}</td>
-          </tr>
-          <tr>
-            <td class="label">Amount Paid</td>
-            <td class="value amount-paid">${formatCurrency(receipt.amount)}</td>
-          </tr>
-          <tr>
-            <td class="label">Created</td>
-            <td class="value">${formatDate(receipt.created_at)}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <!-- Payment Confirmation -->
+      <div class="payment-confirmation">
+        <div class="confirmation-text">✓ Payment Confirmed</div>
+        <div class="confirmation-details">
+          This receipt serves as proof of payment for the above amount.
+          Please retain this document for your records.
+        </div>
+      </div>
 
-    ${
-      invoice.description
-        ? `
-    <div class="section-title">Invoice Description</div>
-    <div class="description">
-      ${invoice.description.replace(/\n/g, "<br>")}
+      <!-- Additional Notes -->
+      ${
+        invoice.description
+          ? `
+      <div class="notes-section">
+        <div class="section-title">INVOICE DESCRIPTION</div>
+        <div class="notes-content">
+          ${invoice.description.replace(/\n/g, "<br>")}
+        </div>
+      </div>
+      `
+          : ""
+      }
     </div>
-    `
-        : ""
-    }
   `;
 
   // Use the centralized branding service
