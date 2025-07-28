@@ -34,6 +34,46 @@ export interface QuotationPDFData {
   }>;
 }
 
+export interface InvoicePDFData {
+  success: boolean;
+  pdfHtml: string;
+  invoice: {
+    id: string;
+    invoice_number: string;
+    client_id: string;
+    issue_date: string;
+    due_date: string;
+    description: string;
+    total_amount: number;
+    amount_paid: number;
+    balance_due: number;
+    status: string;
+    uses_items?: boolean;
+  };
+  client: {
+    id: string;
+    name: string;
+    contact_email?: string;
+    contact_phone?: string;
+    address?: string;
+  };
+  items: Array<{
+    id: string;
+    invoice_id: string;
+    position: number;
+    title: string;
+    description?: string;
+    price: number;
+  }>;
+  receipts: Array<{
+    id: string;
+    receipt_number: string;
+    payment_date: string;
+    amount: number;
+    payment_method: string;
+  }>;
+}
+
 export interface PDFGenerationError {
   success: false;
   error: string;

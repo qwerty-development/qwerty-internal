@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { createPayment } from "@/utils/paymentCreation";
+import { generateInvoicePDF } from "@/utils/pdfGenerator";
 import Link from "next/link";
 
 export default function InvoiceDetailPage() {
@@ -29,6 +30,7 @@ export default function InvoiceDetailPage() {
   );
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Fetch invoice, client, receipts, and items data
   useEffect(() => {
@@ -271,6 +273,20 @@ export default function InvoiceDetailPage() {
     }
   };
 
+  // Generate PDF
+  const handleGeneratePDF = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      await generateInvoicePDF(invoiceId);
+      alert("PDF generated successfully!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const handlePaymentChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -307,6 +323,13 @@ export default function InvoiceDetailPage() {
             </p>
           </div>
           <div className="flex space-x-3">
+            <button
+              onClick={handleGeneratePDF}
+              disabled={isGeneratingPDF}
+              className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            >
+              📄 {isGeneratingPDF ? "Generating..." : "Generate PDF"}
+            </button>
             {client && (
               <Link
                 href={`/admin/clients/${client.id}`}

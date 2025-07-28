@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { generateInvoicePDF } from "@/utils/pdfGenerator";
 import Link from "next/link";
-import { RefreshCw, ChevronUp, ChevronDown } from "lucide-react";
+import { RefreshCw, ChevronUp, ChevronDown, Download } from "lucide-react";
 
 export default function InvoiceListPage() {
   const supabase = createClient();
@@ -12,6 +13,7 @@ export default function InvoiceListPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatingPDFs, setGeneratingPDFs] = useState<Set<string>>(new Set());
 
   // Sorting state
   const [sortField, setSortField] = useState<string>("invoice_number");
@@ -87,6 +89,24 @@ export default function InvoiceListPage() {
   // Function to handle manual refresh
   const handleRefresh = () => {
     fetchData();
+  };
+
+  // Handle PDF generation
+  const handleGeneratePDF = async (invoiceId: string) => {
+    setGeneratingPDFs(prev => new Set(prev).add(invoiceId));
+    try {
+      await generateInvoicePDF(invoiceId);
+      alert("PDF generated successfully!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setGeneratingPDFs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(invoiceId);
+        return newSet;
+      });
+    }
   };
 
   useEffect(() => {
@@ -310,6 +330,14 @@ export default function InvoiceListPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleGeneratePDF(invoice.id)}
+                        disabled={generatingPDFs.has(invoice.id)}
+                        className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 disabled:bg-blue-25 disabled:text-blue-400 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                      >
+                        <Download className="w-3 h-3" />
+                        {generatingPDFs.has(invoice.id) ? "Generating..." : "PDF"}
+                      </button>
                       <Link
                         href={`/admin/invoices/${invoice.id}`}
                         className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors"
