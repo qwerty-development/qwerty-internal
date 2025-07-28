@@ -126,7 +126,7 @@ const TicketList: React.FC<Props> = ({ tickets }) => {
                         className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors"
                       >
                         <Download className="w-4 h-4" />
-                        View Attachment
+                        View Attachment.
                       </a>
                     </div>
                   )}
