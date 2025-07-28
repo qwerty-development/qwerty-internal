@@ -3,6 +3,14 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { BrandingSettings } from "@/utils/brandingService";
+import {
+  Palette,
+  Eye,
+  Save,
+  RotateCcw,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 
 export default function BrandingSettingsPage() {
   const supabase = createClient();
@@ -146,38 +154,38 @@ export default function BrandingSettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          PDF Branding Settings
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Customize the appearance of all PDF documents (invoices, quotations,
-          etc.)
-        </p>
+        <div className="flex items-center mb-4">
+          <div className="p-3 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl mr-4">
+            <Palette className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              PDF Branding Settings
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Customize the appearance of all PDF documents (invoices,
+              quotations, etc.)
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Success Message */}
       {success && (
-        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex">
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center">
             <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-green-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <CheckCircle className="h-5 w-5 text-green-500" />
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-green-800">
                 Branding settings saved successfully!
+              </p>
+              <p className="text-xs text-green-600 mt-1">
+                Changes will apply to all new PDF documents
               </p>
             </div>
           </div>
@@ -186,23 +194,16 @@ export default function BrandingSettingsPage() {
 
       {/* Error Message */}
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex">
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center">
             <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-red-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <AlertCircle className="h-5 w-5 text-red-500" />
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-red-800">{error}</p>
+              <p className="text-xs text-red-600 mt-1">
+                Please check your input and try again
+              </p>
             </div>
           </div>
         </div>
@@ -292,39 +293,56 @@ export default function BrandingSettingsPage() {
         </div>
 
         {/* Color Scheme */}
-        <div className="bg-white rounded-lg shadow-md border p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Color Scheme
-          </h2>
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
+          <div className="flex items-center mb-6">
+            <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg mr-3">
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Color Scheme
+            </h2>
+          </div>
 
           {/* Color Presets */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-700 mb-4">
               Quick Color Presets
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {colorPresets.map((preset) => (
                 <button
                   key={preset.name}
                   type="button"
                   onClick={() => applyColorPreset(preset)}
-                  className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                  className="group flex items-center p-4 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all duration-200 bg-white hover:bg-gray-50"
                 >
-                  <div className="flex space-x-2 mr-3">
+                  <div className="flex space-x-2 mr-4">
                     <div
-                      className="w-4 h-4 rounded border border-gray-300"
+                      className="w-5 h-5 rounded-full border-2 border-gray-300 shadow-sm"
                       style={{ backgroundColor: preset.primary }}
                     ></div>
                     <div
-                      className="w-4 h-4 rounded border border-gray-300"
+                      className="w-5 h-5 rounded-full border-2 border-gray-300 shadow-sm"
                       style={{ backgroundColor: preset.secondary }}
                     ></div>
                     <div
-                      className="w-4 h-4 rounded border border-gray-300"
+                      className="w-5 h-5 rounded-full border-2 border-gray-300 shadow-sm"
                       style={{ backgroundColor: preset.accent }}
                     ></div>
                   </div>
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
                     {preset.name}
                   </span>
                 </button>
@@ -335,17 +353,17 @@ export default function BrandingSettingsPage() {
           {/* Custom Colors */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Primary Color *
               </label>
-              <div className="flex">
+              <div className="flex shadow-sm">
                 <input
                   type="color"
                   value={branding.primary_color}
                   onChange={(e) =>
                     handleChange("primary_color", e.target.value)
                   }
-                  className="w-12 h-10 border border-gray-300 rounded-l-md"
+                  className="w-14 h-12 border border-gray-300 rounded-l-lg cursor-pointer hover:border-gray-400 transition-colors"
                 />
                 <input
                   type="text"
@@ -353,23 +371,23 @@ export default function BrandingSettingsPage() {
                   onChange={(e) =>
                     handleChange("primary_color", e.target.value)
                   }
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm font-mono"
                   placeholder="#01303F"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Secondary Color
               </label>
-              <div className="flex">
+              <div className="flex shadow-sm">
                 <input
                   type="color"
                   value={branding.secondary_color}
                   onChange={(e) =>
                     handleChange("secondary_color", e.target.value)
                   }
-                  className="w-12 h-10 border border-gray-300 rounded-l-md"
+                  className="w-14 h-12 border border-gray-300 rounded-l-lg cursor-pointer hover:border-gray-400 transition-colors"
                 />
                 <input
                   type="text"
@@ -377,27 +395,27 @@ export default function BrandingSettingsPage() {
                   onChange={(e) =>
                     handleChange("secondary_color", e.target.value)
                   }
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm font-mono"
                   placeholder="#014a5f"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Accent Color
               </label>
-              <div className="flex">
+              <div className="flex shadow-sm">
                 <input
                   type="color"
                   value={branding.accent_color}
                   onChange={(e) => handleChange("accent_color", e.target.value)}
-                  className="w-12 h-10 border border-gray-300 rounded-l-md"
+                  className="w-14 h-12 border border-gray-300 rounded-l-lg cursor-pointer hover:border-gray-400 transition-colors"
                 />
                 <input
                   type="text"
                   value={branding.accent_color}
                   onChange={(e) => handleChange("accent_color", e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm font-mono"
                   placeholder="#059669"
                 />
               </div>
@@ -406,10 +424,25 @@ export default function BrandingSettingsPage() {
         </div>
 
         {/* Typography */}
-        <div className="bg-white rounded-lg shadow-md border p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Typography
-          </h2>
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
+          <div className="flex items-center mb-6">
+            <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg mr-3">
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h7"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">Typography</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -444,8 +477,15 @@ export default function BrandingSettingsPage() {
         </div>
 
         {/* Preview */}
-        <div className="bg-white rounded-lg shadow-md border p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Preview</h2>
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
+          <div className="flex items-center mb-6">
+            <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg mr-3">
+              <Eye className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Live Preview
+            </h2>
+          </div>
           <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
             <div
               className="text-center mb-4 pb-4"
@@ -504,15 +544,18 @@ export default function BrandingSettingsPage() {
           <button
             type="submit"
             disabled={saving}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-gradient-to-r from-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-500 disabled:from-gray-400 disabled:to-gray-500 text-white px-8 py-3 rounded-xl transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl disabled:shadow-md font-medium"
           >
             {saving ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Saving...
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <span>Saving...</span>
               </>
             ) : (
-              "Save Branding Settings"
+              <>
+                <Save className="w-5 h-5" />
+                <span>Save Branding Settings</span>
+              </>
             )}
           </button>
         </div>
