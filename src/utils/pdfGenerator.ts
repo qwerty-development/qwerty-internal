@@ -9,7 +9,9 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
     const data: QuotationPDFData | PDFGenerationError = await response.json();
 
     if (!data.success) {
-      throw new Error(data.error || "Failed to generate PDF");
+      // Type guard to ensure we have an error object
+      const errorData = data as PDFGenerationError;
+      throw new Error(errorData.error || "Failed to generate PDF");
     }
 
     // Create a temporary div to render the HTML
