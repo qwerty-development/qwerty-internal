@@ -213,13 +213,26 @@ export default function NewClientPage() {
           </div>
         )}
 
-        <button
-          type="submit"
-          className="w-full py-4 rounded-xl bg-qwerty text-white font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
-          disabled={loading}
-        >
-          {loading ? "Creating..." : "Add Client"}
-        </button>
+        {/* Action Buttons */}
+        <div className="space-y-3">
+          <button
+            type="submit"
+            className="w-full py-4 rounded-xl bg-qwerty text-white font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+            disabled={loading}
+          >
+            {loading ? "Creating..." : "Add Client"}
+          </button>
+          
+          {showPassword && (
+            <button
+              type="button"
+              onClick={() => router.push('/admin/clients')}
+              className="w-full py-4 rounded-xl bg-gray-100 text-gray-700 font-semibold border border-gray-200 hover:bg-gray-200 hover:scale-[1.02] transition-all duration-300"
+            >
+              Back to Clients
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );
