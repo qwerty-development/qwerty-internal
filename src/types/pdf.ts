@@ -13,11 +13,16 @@ export interface QuotationPDFData {
   quotation: {
     id: string;
     quotation_number: string;
-    client_name: string;
-    client_email?: string;
-    client_phone?: string;
-    client_address?: string;
+    company_name: string;
+    company_email?: string;
+    contact_person_name?: string;
+    contact_person_email?: string;
+    contact_phone?: string;
+    address?: string;
+    mof_number?: string;
+    notes?: string;
     description: string;
+    terms_and_conditions?: string;
     total_amount: number;
     issue_date: string;
     due_date?: string;
@@ -52,10 +57,14 @@ export interface InvoicePDFData {
   };
   client: {
     id: string;
-    name: string;
-    contact_email?: string;
+    company_name: string;
+    company_email?: string;
+    contact_person_name?: string;
+    contact_person_email?: string;
     contact_phone?: string;
     address?: string;
+    mof_number?: string;
+    notes?: string;
   };
   items: Array<{
     id: string;
@@ -87,10 +96,14 @@ export interface ReceiptPDFData {
   };
   client: {
     id: string;
-    name: string;
-    contact_email?: string;
+    company_name: string;
+    company_email?: string;
+    contact_person_name?: string;
+    contact_person_email?: string;
     contact_phone?: string;
     address?: string;
+    mof_number?: string;
+    notes?: string;
   };
   invoice: {
     id: string;

@@ -46,10 +46,14 @@ export async function GET(
         *,
         clients (
           id,
-          name,
-          contact_email,
+          company_name,
+          company_email,
+          contact_person_name,
+          contact_person_email,
           contact_phone,
-          address
+          address,
+          mof_number,
+          notes
         ),
         invoices (
           id,
@@ -113,10 +117,14 @@ export async function GET(
       },
       client: {
         id: client.id,
-        name: client.name,
-        contact_email: client.contact_email,
+        company_name: client.company_name,
+        company_email: client.company_email,
+        contact_person_name: client.contact_person_name,
+        contact_person_email: client.contact_person_email,
         contact_phone: client.contact_phone,
         address: client.address,
+        mof_number: client.mof_number,
+        notes: client.notes,
       },
       invoice: {
         id: invoice.id,
@@ -211,10 +219,20 @@ async function generateReceiptPDFWithBranding(
       <!-- Client Information -->
       <div class="client-section">
         <div class="section-title">PAID BY</div>
-        <div class="client-name">${client.name}</div>
+        <div class="client-name">${client.company_name}</div>
         ${
-          client.contact_email
-            ? `<div class="client-contact">${client.contact_email}</div>`
+          client.contact_person_name
+            ? `<div class="client-contact">${client.contact_person_name}</div>`
+            : ""
+        }
+        ${
+          client.company_email
+            ? `<div class="client-contact">${client.company_email}</div>`
+            : ""
+        }
+        ${
+          client.contact_person_email
+            ? `<div class="client-contact">${client.contact_person_email}</div>`
             : ""
         }
         ${
@@ -223,10 +241,16 @@ async function generateReceiptPDFWithBranding(
             : ""
         }
         ${
+          client.mof_number
+            ? `<div class="client-contact">MOF: ${client.mof_number}</div>`
+            : ""
+        }
+        ${
           client.address
             ? `<div class="client-address">${client.address}</div>`
             : ""
         }
+        ${client.notes ? `<div class="client-notes">${client.notes}</div>` : ""}
       </div>
 
       <!-- Invoice Reference -->

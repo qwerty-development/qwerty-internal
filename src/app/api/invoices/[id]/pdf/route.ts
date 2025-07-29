@@ -158,15 +158,35 @@ async function generateInvoicePDFWithBranding(
       <div class="client-info">
         <div class="section-title">Bill To</div>
         <div class="info-row">
-          <div class="label">Name</div>
-          <div class="value">${client.name}</div>
+          <div class="label">Company Name</div>
+          <div class="value">${client.company_name}</div>
         </div>
         ${
-          client.contact_email
+          client.company_email
             ? `
         <div class="info-row">
-          <div class="label">Email</div>
-          <div class="value">${client.contact_email}</div>
+          <div class="label">Company Email</div>
+          <div class="value">${client.company_email}</div>
+        </div>
+        `
+            : ""
+        }
+        ${
+          client.contact_person_name
+            ? `
+        <div class="info-row">
+          <div class="label">Contact Person</div>
+          <div class="value">${client.contact_person_name}</div>
+        </div>
+        `
+            : ""
+        }
+        ${
+          client.contact_person_email
+            ? `
+        <div class="info-row">
+          <div class="label">Contact Email</div>
+          <div class="value">${client.contact_person_email}</div>
         </div>
         `
             : ""
@@ -175,8 +195,18 @@ async function generateInvoicePDFWithBranding(
           client.contact_phone
             ? `
         <div class="info-row">
-          <div class="label">Phone</div>
+          <div class="label">Contact Phone</div>
           <div class="value">${client.contact_phone}</div>
+        </div>
+        `
+            : ""
+        }
+        ${
+          client.mof_number
+            ? `
+        <div class="info-row">
+          <div class="label">MOF Number</div>
+          <div class="value">${client.mof_number}</div>
         </div>
         `
             : ""
@@ -187,6 +217,16 @@ async function generateInvoicePDFWithBranding(
         <div class="info-row">
           <div class="label">Address</div>
           <div class="value">${client.address}</div>
+        </div>
+        `
+            : ""
+        }
+        ${
+          client.notes
+            ? `
+        <div class="info-row">
+          <div class="label">Notes</div>
+          <div class="value">${client.notes}</div>
         </div>
         `
             : ""

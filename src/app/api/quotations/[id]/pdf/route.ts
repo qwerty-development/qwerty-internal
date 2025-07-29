@@ -110,27 +110,79 @@ async function generateQuotationPDFWithBranding(quotation: any, items: any[]) {
       <div class="client-info">
         <div class="section-title">Client Information</div>
         <div class="info-row">
-          <div class="label">Name</div>
-          <div class="value">${quotation.client_name || "N/A"}</div>
+          <div class="label">Company Name</div>
+          <div class="value">${quotation.company_name || "N/A"}</div>
         </div>
-        ${quotation.client_email ? `
+        ${
+          quotation.company_email
+            ? `
         <div class="info-row">
-          <div class="label">Email</div>
-          <div class="value">${quotation.client_email}</div>
+          <div class="label">Company Email</div>
+          <div class="value">${quotation.company_email}</div>
         </div>
-        ` : ''}
-        ${quotation.client_phone ? `
+        `
+            : ""
+        }
+        ${
+          quotation.contact_person_name
+            ? `
         <div class="info-row">
-          <div class="label">Phone</div>
-          <div class="value">${quotation.client_phone}</div>
+          <div class="label">Contact Person</div>
+          <div class="value">${quotation.contact_person_name}</div>
         </div>
-        ` : ''}
-        ${quotation.client_address ? `
+        `
+            : ""
+        }
+        ${
+          quotation.contact_person_email
+            ? `
+        <div class="info-row">
+          <div class="label">Contact Email</div>
+          <div class="value">${quotation.contact_person_email}</div>
+        </div>
+        `
+            : ""
+        }
+        ${
+          quotation.contact_phone
+            ? `
+        <div class="info-row">
+          <div class="label">Contact Phone</div>
+          <div class="value">${quotation.contact_phone}</div>
+        </div>
+        `
+            : ""
+        }
+        ${
+          quotation.mof_number
+            ? `
+        <div class="info-row">
+          <div class="label">MOF Number</div>
+          <div class="value">${quotation.mof_number}</div>
+        </div>
+        `
+            : ""
+        }
+        ${
+          quotation.address
+            ? `
         <div class="info-row">
           <div class="label">Address</div>
-          <div class="value">${quotation.client_address}</div>
+          <div class="value">${quotation.address}</div>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
+        ${
+          quotation.notes
+            ? `
+        <div class="info-row">
+          <div class="label">Notes</div>
+          <div class="value">${quotation.notes}</div>
+        </div>
+        `
+            : ""
+        }
       </div>
 
       <div class="quotation-info">
@@ -139,12 +191,16 @@ async function generateQuotationPDFWithBranding(quotation: any, items: any[]) {
           <div class="label">Issue Date</div>
           <div class="value">${formatDate(quotation.issue_date)}</div>
         </div>
-        ${quotation.due_date ? `
+        ${
+          quotation.due_date
+            ? `
         <div class="info-row">
           <div class="label">Due Date</div>
           <div class="value">${formatDate(quotation.due_date)}</div>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
         <div class="info-row">
           <div class="label">Status</div>
           <div class="value">
@@ -160,7 +216,9 @@ async function generateQuotationPDFWithBranding(quotation: any, items: any[]) {
       </div>
     </div>
 
-    ${items.length > 0 ? `
+    ${
+      items.length > 0
+        ? `
     <div class="section-title">Items</div>
     <table class="items-table">
       <thead>
@@ -171,16 +229,24 @@ async function generateQuotationPDFWithBranding(quotation: any, items: any[]) {
         </tr>
       </thead>
       <tbody>
-        ${items.map((item, index) => `
+        ${items
+          .map(
+            (item, index) => `
         <tr>
           <td class="item-number">${index + 1}</td>
           <td>
             <div class="item-title">${item.title}</div>
-            ${item.description ? `<div class="item-description">${item.description}</div>` : ''}
+            ${
+              item.description
+                ? `<div class="item-description">${item.description}</div>`
+                : ""
+            }
           </td>
           <td class="item-price">${formatCurrency(item.price)}</td>
         </tr>
-        `).join('')}
+        `
+          )
+          .join("")}
       </tbody>
       <tfoot>
         <tr class="total-row">
@@ -189,16 +255,37 @@ async function generateQuotationPDFWithBranding(quotation: any, items: any[]) {
         </tr>
       </tfoot>
     </table>
-    ` : ''}
+    `
+        : ""
+    }
 
-    ${quotation.description ? `
+    ${
+      quotation.description
+        ? `
     <div class="section-title">Description</div>
     <div class="description">
-      ${quotation.description.replace(/\n/g, '<br>')}
+      ${quotation.description.replace(/\n/g, "<br>")}
     </div>
-    ` : ''}
+    `
+        : ""
+    }
+
+    ${
+      quotation.terms_and_conditions
+        ? `
+    <div class="section-title">Terms and Conditions</div>
+    <div class="terms-and-conditions">
+      ${quotation.terms_and_conditions.replace(/\n/g, "<br>")}
+    </div>
+    `
+        : ""
+    }
   `;
 
   // Use the centralized branding service
-  return await generatePDFTemplate("Quotation", quotation.quotation_number, content);
+  return await generatePDFTemplate(
+    "Quotation",
+    quotation.quotation_number,
+    content
+  );
 }
