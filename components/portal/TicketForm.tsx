@@ -1,5 +1,5 @@
 // components/portal/TicketForm.tsx
-'use client'
+"use client";
 import React from "react";
 import { Plus, Upload, Send } from "lucide-react";
 
@@ -16,18 +16,20 @@ interface Props {
   error: string | null;
   success: string | null;
   form: FormData;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const TicketForm: React.FC<Props> = ({ 
-  onSubmit, 
-  loading, 
-  error, 
-  success, 
-  form, 
-  onChange, 
-  onFileChange 
+const TicketForm: React.FC<Props> = ({
+  onSubmit,
+  loading,
+  error,
+  success,
+  form,
+  onChange,
+  onFileChange,
 }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +48,7 @@ const TicketForm: React.FC<Props> = ({
             <Plus className="w-6 h-6 text-white" />
           </div>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-semibold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent mb-2">
@@ -62,7 +64,7 @@ const TicketForm: React.FC<Props> = ({
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-semibold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent mb-2">
               Description *
@@ -77,7 +79,7 @@ const TicketForm: React.FC<Props> = ({
               rows={4}
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-semibold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent mb-2">
               Page or Route *
@@ -92,7 +94,7 @@ const TicketForm: React.FC<Props> = ({
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-semibold bg-gradient-to-r from-[#01303F] to-[#014a5f] bg-clip-text text-transparent mb-2">
               Attachment (optional)
@@ -108,32 +110,33 @@ const TicketForm: React.FC<Props> = ({
               <Upload className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
           </div>
-          
+
           {error && (
             <div className="p-4 rounded-xl bg-gradient-to-r from-red-50 to-red-100 border border-red-200 backdrop-blur">
               <p className="text-red-700 text-sm font-medium">{error}</p>
             </div>
           )}
-          
+
           {success && (
             <div className="p-4 rounded-xl bg-gradient-to-r from-green-50 to-green-100 border border-green-200 backdrop-blur">
               <p className="text-green-700 text-sm font-medium">{success}</p>
             </div>
           )}
-          
+
           <button
             type="submit"
-            className="w-full py-4 rounded-xl bg-gradient-to-r from-[#01303F] to-[#014a5f] text-white font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed group/btn"
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-[#01303F] to-[#014a5f] text-white font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed group/btn relative overflow-hidden"
             disabled={loading}
           >
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/0 via-blue-400/20 to-purple-400/0 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500"></div>
             {loading ? (
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center justify-center gap-3 relative z-10">
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 <span>Submitting...</span>
               </div>
             ) : (
-              <div className="flex items-center justify-center gap-3">
-                <Send className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-300" />
+              <div className="flex items-center justify-center gap-3 relative z-10">
+                <Send className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-300 group-hover/btn:scale-110" />
                 <span>Submit Support Ticket</span>
               </div>
             )}
