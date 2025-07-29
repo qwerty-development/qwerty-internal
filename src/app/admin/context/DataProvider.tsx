@@ -38,21 +38,21 @@ export const useData = () => {
 const initialClients: Client[] = [
   {
     id: "c1",
-    name: "Acme Corp",
-    phone: "111-222-3333",
+    company_name: "Acme Corp",
+    contact_phone: "111-222-3333",
     address: "123 Main St",
-    email: "acme@example.com",
-    regularBalance: 0,
-    paidAmount: 0,
+    company_email: "acme@example.com",
+    regular_balance: 0,
+    paid_amount: 0,
   },
   {
     id: "c2",
-    name: "Beta Solutions",
-    phone: "444-555-6666",
+    company_name: "Beta Solutions",
+    contact_phone: "444-555-6666",
     address: "456 Oak Ave",
-    email: "beta@example.com",
-    regularBalance: 0,
-    paidAmount: 0,
+    company_email: "beta@example.com",
+    regular_balance: 0,
+    paid_amount: 0,
   },
 ];
 
@@ -67,8 +67,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     const newClient: Client = {
       ...clientData,
       id: crypto.randomUUID(),
-      regularBalance: 0,
-      paidAmount: 0,
+      regular_balance: 0,
+      paid_amount: 0,
     };
     setClients((prev) => [...prev, newClient]);
   };
@@ -105,7 +105,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         client.id === invoiceData.clientId
           ? {
               ...client,
-              regularBalance: client.regularBalance + invoiceData.totalAmount,
+              regular_balance: client.regular_balance + invoiceData.totalAmount,
             }
           : client
       )
@@ -155,8 +155,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         client.id === receiptData.clientId
           ? {
               ...client,
-              paidAmount: client.paidAmount + receiptData.amount,
-              regularBalance: client.regularBalance - receiptData.amount,
+              paid_amount: client.paid_amount + receiptData.amount,
+              regular_balance: client.regular_balance - receiptData.amount,
             }
           : client
       )
