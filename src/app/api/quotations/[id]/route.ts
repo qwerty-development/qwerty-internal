@@ -41,8 +41,6 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-
-
     // Fetch quotation details
     const { data: quotation, error } = await supabase
       .from("quotations")
@@ -107,13 +105,19 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-
     const updateData = await request.json();
 
     // Validate required fields
-    if (!updateData.clientName?.trim()) {
+    if (!updateData.company_name?.trim()) {
       return NextResponse.json(
-        { error: "Client name is required" },
+        { error: "Company name is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!updateData.company_email?.trim()) {
+      return NextResponse.json(
+        { error: "Company email is required" },
         { status: 400 }
       );
     }
@@ -135,16 +139,18 @@ export async function PUT(
     // Prepare update data
     const quotationUpdate = {
       // Client data
-      client_name: updateData.clientName.trim(),
-      client_email: updateData.clientEmail?.trim() || null,
-      client_phone: updateData.clientPhone?.trim() || null,
-      client_contact_email: updateData.clientContactEmail?.trim() || null,
-      client_contact_phone: updateData.clientContactPhone?.trim() || null,
-      client_address: updateData.clientAddress?.trim() || null,
-      client_notes: updateData.clientNotes?.trim() || null,
+      company_name: updateData.company_name.trim(),
+      company_email: updateData.company_email.trim(),
+      contact_person_name: updateData.contact_person_name?.trim() || null,
+      contact_person_email: updateData.contact_person_email?.trim() || null,
+      contact_phone: updateData.contact_phone?.trim() || null,
+      address: updateData.address?.trim() || null,
+      mof_number: updateData.mof_number?.trim() || null,
+      notes: updateData.notes?.trim() || null,
 
       // Quotation data
       description: updateData.description.trim(),
+      terms_and_conditions: updateData.terms_and_conditions?.trim() || null,
       quotation_issue_date: updateData.quotationIssueDate,
       quotation_due_date: updateData.quotationDueDate || null,
 

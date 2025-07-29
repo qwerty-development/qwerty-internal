@@ -17,16 +17,18 @@ export default function NewQuotationPage() {
 
   const [formData, setFormData] = useState({
     // Client Information
-    clientName: "",
-    clientEmail: "",
-    clientPhone: "",
-    clientContactEmail: "",
-    clientContactPhone: "",
-    clientAddress: "",
-    clientNotes: "",
+    company_name: "",
+    company_email: "",
+    contact_person_name: "",
+    contact_person_email: "",
+    contact_phone: "",
+    address: "",
+    mof_number: "",
+    notes: "",
 
     // Quotation Details
     description: "",
+    terms_and_conditions: "",
     quotationIssueDate: new Date().toISOString().split("T")[0],
     quotationDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       .toISOString()
@@ -46,16 +48,12 @@ export default function NewQuotationPage() {
     const newErrors: Record<string, string> = {};
 
     // Validate client fields
-    if (!formData.clientName.trim()) {
-      newErrors.clientName = "Client name is required";
+    if (!formData.company_name.trim()) {
+      newErrors.company_name = "Company name is required";
     }
 
-    if (!formData.clientEmail?.trim() && !formData.clientContactEmail?.trim()) {
-      newErrors.clientEmail = "At least one email address is required";
-    }
-
-    if (!formData.clientPhone?.trim() && !formData.clientContactPhone?.trim()) {
-      newErrors.clientPhone = "At least one phone number is required";
+    if (!formData.company_email?.trim()) {
+      newErrors.company_email = "Company email is required";
     }
 
     // Validate quotation fields
@@ -164,16 +162,21 @@ export default function NewQuotationPage() {
         },
         body: JSON.stringify({
           // Client data
-          clientName: formData.clientName.trim(),
-          clientEmail: formData.clientEmail?.trim() || undefined,
-          clientPhone: formData.clientPhone?.trim() || undefined,
-          clientContactEmail: formData.clientContactEmail?.trim() || undefined,
-          clientContactPhone: formData.clientContactPhone?.trim() || undefined,
-          clientAddress: formData.clientAddress?.trim() || undefined,
-          clientNotes: formData.clientNotes?.trim() || undefined,
+          company_name: formData.company_name.trim(),
+          company_email: formData.company_email.trim(),
+          contact_person_name:
+            formData.contact_person_name?.trim() || undefined,
+          contact_person_email:
+            formData.contact_person_email?.trim() || undefined,
+          contact_phone: formData.contact_phone?.trim() || undefined,
+          address: formData.address?.trim() || undefined,
+          mof_number: formData.mof_number?.trim() || undefined,
+          notes: formData.notes?.trim() || undefined,
 
           // Quotation data
           description: formData.description.trim(),
+          terms_and_conditions:
+            formData.terms_and_conditions?.trim() || undefined,
           quotationIssueDate: formData.quotationIssueDate,
           quotationDueDate: formData.quotationDueDate || undefined,
           items: items.filter((item) => item.title.trim()), // Only include items with titles
@@ -230,144 +233,155 @@ export default function NewQuotationPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label
-                  htmlFor="clientName"
+                  htmlFor="company_name"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Client Name *
+                  Company Name *
                 </label>
                 <input
                   type="text"
-                  id="clientName"
-                  name="clientName"
-                  value={formData.clientName}
+                  id="company_name"
+                  name="company_name"
+                  value={formData.company_name}
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.clientName ? "border-red-300" : "border-gray-300"
+                    errors.company_name ? "border-red-300" : "border-gray-300"
                   }`}
-                  placeholder="Enter client name"
+                  placeholder="Enter company name"
                 />
-                {errors.clientName && (
+                {errors.company_name && (
                   <p className="mt-1 text-sm text-red-600">
-                    {errors.clientName}
+                    {errors.company_name}
                   </p>
                 )}
               </div>
 
               <div>
                 <label
-                  htmlFor="clientEmail"
+                  htmlFor="company_email"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Primary Email
+                  Company Email *
                 </label>
                 <input
                   type="email"
-                  id="clientEmail"
-                  name="clientEmail"
-                  value={formData.clientEmail}
+                  id="company_email"
+                  name="company_email"
+                  value={formData.company_email}
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.clientEmail ? "border-red-300" : "border-gray-300"
+                    errors.company_email ? "border-red-300" : "border-gray-300"
                   }`}
-                  placeholder="primary@email.com"
+                  placeholder="company@email.com"
                 />
-                {errors.clientEmail && (
+                {errors.company_email && (
                   <p className="mt-1 text-sm text-red-600">
-                    {errors.clientEmail}
+                    {errors.company_email}
                   </p>
                 )}
               </div>
 
               <div>
                 <label
-                  htmlFor="clientContactEmail"
+                  htmlFor="contact_person_name"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Contact Email
+                  Contact Person Name
                 </label>
                 <input
-                  type="email"
-                  id="clientContactEmail"
-                  name="clientContactEmail"
-                  value={formData.clientContactEmail}
+                  type="text"
+                  id="contact_person_name"
+                  name="contact_person_name"
+                  value={formData.contact_person_name}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="contact@email.com"
+                  placeholder="Contact person name"
                 />
               </div>
 
               <div>
                 <label
-                  htmlFor="clientPhone"
+                  htmlFor="contact_person_email"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Primary Phone
+                  Contact Person Email
                 </label>
                 <input
-                  type="tel"
-                  id="clientPhone"
-                  name="clientPhone"
-                  value={formData.clientPhone}
+                  type="email"
+                  id="contact_person_email"
+                  name="contact_person_email"
+                  value={formData.contact_person_email}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.clientPhone ? "border-red-300" : "border-gray-300"
-                  }`}
-                  placeholder="+1 (555) 123-4567"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="contact.person@email.com"
                 />
-                {errors.clientPhone && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.clientPhone}
-                  </p>
-                )}
               </div>
 
               <div>
                 <label
-                  htmlFor="clientContactPhone"
+                  htmlFor="contact_phone"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   Contact Phone
                 </label>
                 <input
                   type="tel"
-                  id="clientContactPhone"
-                  name="clientContactPhone"
-                  value={formData.clientContactPhone}
+                  id="contact_phone"
+                  name="contact_phone"
+                  value={formData.contact_phone}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="+1 (555) 987-6543"
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="mof_number"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  MOF Number
+                </label>
+                <input
+                  type="text"
+                  id="mof_number"
+                  name="mof_number"
+                  value={formData.mof_number}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="MOF registration number"
                 />
               </div>
 
               <div className="md:col-span-2">
                 <label
-                  htmlFor="clientAddress"
+                  htmlFor="address"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   Address
                 </label>
                 <textarea
-                  id="clientAddress"
-                  name="clientAddress"
-                  value={formData.clientAddress}
+                  id="address"
+                  name="address"
+                  value={formData.address}
                   onChange={handleInputChange}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter client address"
+                  placeholder="Enter company address"
                 />
               </div>
 
               <div className="md:col-span-2">
                 <label
-                  htmlFor="clientNotes"
+                  htmlFor="notes"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   Notes
                 </label>
                 <textarea
-                  id="clientNotes"
-                  name="clientNotes"
-                  value={formData.clientNotes}
+                  id="notes"
+                  name="notes"
+                  value={formData.notes}
                   onChange={handleInputChange}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -458,6 +472,24 @@ export default function NewQuotationPage() {
                     {errors.description}
                   </p>
                 )}
+              </div>
+
+              <div className="md:col-span-2">
+                <label
+                  htmlFor="terms_and_conditions"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Terms and Conditions
+                </label>
+                <textarea
+                  id="terms_and_conditions"
+                  name="terms_and_conditions"
+                  value={formData.terms_and_conditions}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter terms and conditions for this quotation..."
+                />
               </div>
             </div>
           </div>

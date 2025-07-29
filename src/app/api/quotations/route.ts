@@ -24,16 +24,18 @@ interface QuotationItemData {
 
 interface QuotationData {
   // Client data
-  clientName: string;
-  clientEmail?: string;
-  clientPhone?: string;
-  clientContactEmail?: string;
-  clientContactPhone?: string;
-  clientAddress?: string;
-  clientNotes?: string;
+  company_name: string;
+  company_email: string;
+  contact_person_name?: string;
+  contact_person_email?: string;
+  contact_phone?: string;
+  address?: string;
+  mof_number?: string;
+  notes?: string;
 
-  // Invoice data
+  // Quotation data
   description: string;
+  terms_and_conditions?: string;
   quotationIssueDate: string;
   quotationDueDate?: string;
   totalAmount?: number;
@@ -91,9 +93,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate required fields
-    if (!quotationData.clientName?.trim()) {
+    if (!quotationData.company_name?.trim()) {
       return NextResponse.json(
-        { success: false, error: "Client name is required" },
+        { success: false, error: "Company name is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!quotationData.company_email?.trim()) {
+      return NextResponse.json(
+        { success: false, error: "Company email is required" },
         { status: 400 }
       );
     }
@@ -170,16 +179,20 @@ export async function POST(request: NextRequest) {
       .from("quotations")
       .insert({
         // Client data
-        client_name: quotationData.clientName.trim(),
-        client_email: quotationData.clientEmail?.trim() || null,
-        client_phone: quotationData.clientPhone?.trim() || null,
-        client_contact_email: quotationData.clientContactEmail?.trim() || null,
-        client_contact_phone: quotationData.clientContactPhone?.trim() || null,
-        client_address: quotationData.clientAddress?.trim() || null,
-        client_notes: quotationData.clientNotes?.trim() || null,
+        company_name: quotationData.company_name.trim(),
+        company_email: quotationData.company_email.trim(),
+        contact_person_name: quotationData.contact_person_name?.trim() || null,
+        contact_person_email:
+          quotationData.contact_person_email?.trim() || null,
+        contact_phone: quotationData.contact_phone?.trim() || null,
+        address: quotationData.address?.trim() || null,
+        mof_number: quotationData.mof_number?.trim() || null,
+        notes: quotationData.notes?.trim() || null,
 
-        // Invoice data - use the new quotation-specific fields
+        // Quotation data
         description: quotationData.description.trim(),
+        terms_and_conditions:
+          quotationData.terms_and_conditions?.trim() || null,
         quotation_issue_date: quotationData.quotationIssueDate,
         quotation_due_date: quotationData.quotationDueDate || null,
         total_amount: totalAmount,
