@@ -100,10 +100,39 @@ export async function DELETE(
       );
     }
 
-    // 4. Delete updates (commented out as client_id column doesn't exist)
-    // const { error: updatesError } = await supabase.from("updates").delete().eq("client_id", clientId);
+    // 4. Delete quotations (these will cascade due to foreign key constraint)
+    const { error: quotationsError } = await supabase
+      .from("quotations")
+      .delete()
+      .eq("client_id", clientId);
 
-    // 5. Delete user record
+    if (quotationsError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Failed to delete quotations: ${quotationsError.message}`,
+        },
+        { status: 500 }
+      );
+    }
+
+    // 5. Delete updates (these have NO ACTION constraint, so we need to handle them manually)
+    const { error: updatesError } = await supabase
+      .from("updates")
+      .delete()
+      .eq("client_id", clientId);
+
+    if (updatesError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Failed to delete updates: ${updatesError.message}`,
+        },
+        { status: 500 }
+      );
+    }
+
+    // 6. Delete user record
     const { error: userError } = await supabase
       .from("users")
       .delete()
@@ -119,7 +148,7 @@ export async function DELETE(
       );
     }
 
-    // 6. Delete client record
+    // 7. Delete client record
     const { error: clientDeleteError } = await supabase
       .from("clients")
       .delete()
@@ -135,7 +164,7 @@ export async function DELETE(
       );
     }
 
-    // 7. Delete from Supabase Auth
+    // 8. Delete from Supabase Auth
     const { error: authError } = await supabase.auth.admin.deleteUser(
       client.user_id
     );
@@ -145,7 +174,7 @@ export async function DELETE(
       // Don't return error here as the database records are already deleted
     }
 
-    // 8. Delete files from storage (if storage is set up)
+    // 9. Delete files from storage (if storage is set up)
     if (fileUrls.length > 0) {
       try {
         // This will work once you set up Supabase Storage buckets

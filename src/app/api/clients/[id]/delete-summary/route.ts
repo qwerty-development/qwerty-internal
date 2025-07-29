@@ -37,6 +37,8 @@ export async function GET(
       { count: ticketsCount },
       { count: invoicesCount },
       { count: receiptsCount },
+      { count: quotationsCount },
+      { count: updatesCount },
     ] = await Promise.all([
       supabase
         .from("tickets")
@@ -48,6 +50,14 @@ export async function GET(
         .eq("client_id", clientId),
       supabase
         .from("receipts")
+        .select("*", { count: "exact", head: true })
+        .eq("client_id", clientId),
+      supabase
+        .from("quotations")
+        .select("*", { count: "exact", head: true })
+        .eq("client_id", clientId),
+      supabase
+        .from("updates")
         .select("*", { count: "exact", head: true })
         .eq("client_id", clientId),
     ]);
@@ -75,7 +85,8 @@ export async function GET(
       tickets: ticketsCount || 0,
       invoices: invoicesCount || 0,
       receipts: receiptsCount || 0,
-      updates: 0,
+      quotations: quotationsCount || 0,
+      updates: updatesCount || 0,
       files: fileUrls,
     };
 

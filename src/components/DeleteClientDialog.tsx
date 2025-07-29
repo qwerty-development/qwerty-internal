@@ -15,6 +15,7 @@ interface DeletionSummary {
   tickets: number;
   invoices: number;
   receipts: number;
+  quotations: number;
   updates: number;
   files: string[];
 }
@@ -100,6 +101,16 @@ export default function DeleteClientDialog({
                       <span>
                         {summary.receipts} receipt
                         {summary.receipts !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  )}
+
+                  {summary.quotations > 0 && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <FileText className="w-4 h-4 mr-2 text-yellow-500" />
+                      <span>
+                        {summary.quotations} quotation
+                        {summary.quotations !== 1 ? "s" : ""}
                       </span>
                     </div>
                   )}
