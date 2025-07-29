@@ -154,10 +154,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Store the password in database for later retrieval
+    console.log("Attempting to store password for client:", client.id);
     const passwordStored = await storePasswordInDatabase(client.id, password, clientData.company_email.trim());
     
     if (!passwordStored) {
-      console.warn("Failed to store password in database for client:", client.id);
+      console.error("Failed to store password in database for client:", client.id);
+    } else {
+      console.log("Password stored successfully for client:", client.id);
     }
 
     return NextResponse.json({

@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import crypto from "crypto";
 
 // Create a service role client for admin operations
 const createServiceClient = () => {
@@ -15,38 +14,7 @@ const createServiceClient = () => {
   return createClient(supabaseUrl, supabaseServiceKey);
 };
 
-// Simple encryption/decryption functions
-// In production, you might want to use a more robust encryption library
-function encryptPassword(password: string): string {
-  const algorithm = "aes-256-cbc";
-  const key = crypto.scryptSync(
-    process.env.PASSWORD_ENCRYPTION_KEY || "default-key",
-    "salt",
-    32
-  );
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipher(algorithm, key);
-  let encrypted = cipher.update(password, "utf8", "hex");
-  encrypted += cipher.final("hex");
-  return iv.toString("hex") + ":" + encrypted;
-}
-
-function decryptPassword(encryptedPassword: string): string {
-  const algorithm = "aes-256-cbc";
-  const key = crypto.scryptSync(
-    process.env.PASSWORD_ENCRYPTION_KEY || "default-key",
-    "salt",
-    32
-  );
-  const parts = encryptedPassword.split(":");
-  const iv = Buffer.from(parts[0], "hex");
-  const encrypted = parts[1];
-  const decipher = crypto.createDecipher(algorithm, key);
-  let decrypted = decipher.update(encrypted, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-  return decrypted;
-}
-
+// Simplified version without encryption for debugging
 export async function storePasswordInDatabase(
   clientId: string,
   password: string,
@@ -54,20 +22,27 @@ export async function storePasswordInDatabase(
 ): Promise<boolean> {
   try {
     const supabase = createServiceClient();
-    const encryptedPassword = encryptPassword(password);
 
-    const { error } = await supabase.from("password_storage").upsert({
-      client_id: clientId,
-      email: email,
-      password_hash: encryptedPassword,
-      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-    });
+    console.log("Storing password for client:", clientId, "email:", email);
+
+    const { data, error } = await supabase
+      .from("password_storage")
+      .upsert({
+        client_id: clientId,
+        email: email,
+        password_hash: password, // Store plain text temporarily for debugging
+        expires_at: new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000
+        ).toISOString(), // 30 days
+      })
+      .select();
 
     if (error) {
       console.error("Error storing password:", error);
       return false;
     }
 
+    console.log("Password stored successfully:", data);
     return true;
   } catch (error) {
     console.error("Error in storePasswordInDatabase:", error);
@@ -81,16 +56,25 @@ export async function getPasswordFromDatabase(
   try {
     const supabase = createServiceClient();
 
+    console.log("Retrieving password for client:", clientId);
+
     const { data, error } = await supabase
       .from("password_storage")
       .select("password_hash, email, expires_at")
       .eq("client_id", clientId)
       .single();
 
-    if (error || !data) {
+    if (error) {
       console.error("Error retrieving password:", error);
       return null;
     }
+
+    if (!data) {
+      console.log("No password data found for client:", clientId);
+      return null;
+    }
+
+    console.log("Found password data:", data);
 
     // Check if password has expired
     if (new Date(data.expires_at) < new Date()) {
@@ -103,9 +87,8 @@ export async function getPasswordFromDatabase(
       return null;
     }
 
-    const decryptedPassword = decryptPassword(data.password_hash);
     return {
-      password: decryptedPassword,
+      password: data.password_hash, // Return plain text temporarily
       email: data.email,
     };
   } catch (error) {
