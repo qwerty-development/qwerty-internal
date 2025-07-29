@@ -6,13 +6,14 @@ import { createClientUser } from "@/utils/clientCreation";
 export default function NewClientPage() {
   const router = useRouter();
   const [form, setForm] = useState({
-    name: "",
-    contact_email: "",
-    contact_phone: "",
-    address: "",
-    notes: "",
     company_name: "",
     company_email: "",
+    contact_person_name: "",
+    contact_person_email: "",
+    contact_phone: "",
+    address: "",
+    mof_number: "",
+    notes: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,21 +38,21 @@ export default function NewClientPage() {
     setGeneratedPassword(null);
     setShowPassword(false);
 
-    if (!form.name.trim()) {
-      setError("Name is required");
+    if (!form.company_name.trim()) {
+      setError("Company name is required");
       setLoading(false);
       return;
     }
 
-    if (!form.contact_email.trim()) {
-      setError("Email is required for client login");
+    if (!form.company_email.trim()) {
+      setError("Company email is required for client login");
       setLoading(false);
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.contact_email.trim())) {
+    if (!emailRegex.test(form.company_email.trim())) {
       setError("Please enter a valid email address");
       setLoading(false);
       return;
@@ -59,13 +60,14 @@ export default function NewClientPage() {
 
     try {
       const result = await createClientUser({
-        name: form.name,
-        email: form.contact_email,
-        phone: form.contact_phone || undefined,
+        company_name: form.company_name,
+        company_email: form.company_email,
+        contact_person_name: form.contact_person_name || undefined,
+        contact_person_email: form.contact_person_email || undefined,
+        contact_phone: form.contact_phone || undefined,
         address: form.address || undefined,
+        mof_number: form.mof_number || undefined,
         notes: form.notes || undefined,
-        company_name: form.company_name || undefined,
-        company_email: form.company_email || undefined,
       });
 
       if (result.success) {
@@ -73,13 +75,14 @@ export default function NewClientPage() {
         setGeneratedPassword(result.password);
         setShowPassword(true);
         setForm({
-          name: "",
-          contact_email: "",
-          contact_phone: "",
-          address: "",
-          notes: "",
           company_name: "",
           company_email: "",
+          contact_person_name: "",
+          contact_person_email: "",
+          contact_phone: "",
+          address: "",
+          mof_number: "",
+          notes: "",
         });
       } else {
         setError(result.error || "Failed to create client");
@@ -125,36 +128,7 @@ export default function NewClientPage() {
         )}
         <div>
           <label className="block text-sm font-semibold text-qwerty mb-2">
-            Name *
-          </label>
-          <input
-            name="name"
-            type="text"
-            className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400"
-            value={form.name}
-            onChange={handleChange}
-            placeholder="Client name"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-semibold text-qwerty mb-2">
-            Contact Email *
-          </label>
-          <input
-            name="contact_email"
-            type="email"
-            className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400"
-            value={form.contact_email}
-            onChange={handleChange}
-            placeholder="Email address"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold text-qwerty mb-2">
-            Company Name
+            Company Name *
           </label>
           <input
             name="company_name"
@@ -162,13 +136,13 @@ export default function NewClientPage() {
             className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400"
             value={form.company_name}
             onChange={handleChange}
-            placeholder="Company name (optional)"
+            placeholder="Company name"
+            required
           />
         </div>
-
         <div>
           <label className="block text-sm font-semibold text-qwerty mb-2">
-            Company Email
+            Company Email *
           </label>
           <input
             name="company_email"
@@ -176,7 +150,36 @@ export default function NewClientPage() {
             className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400"
             value={form.company_email}
             onChange={handleChange}
-            placeholder="Company email (optional)"
+            placeholder="Company email address"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-qwerty mb-2">
+            Contact Person Name
+          </label>
+          <input
+            name="contact_person_name"
+            type="text"
+            className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400"
+            value={form.contact_person_name}
+            onChange={handleChange}
+            placeholder="Contact person name (optional)"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-qwerty mb-2">
+            Contact Person Email
+          </label>
+          <input
+            name="contact_person_email"
+            type="email"
+            className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400"
+            value={form.contact_person_email}
+            onChange={handleChange}
+            placeholder="Contact person email (optional)"
           />
         </div>
         <div>
@@ -190,6 +193,20 @@ export default function NewClientPage() {
             value={form.contact_phone}
             onChange={handleChange}
             placeholder="Phone number"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-qwerty mb-2">
+            MOF Number
+          </label>
+          <input
+            name="mof_number"
+            type="text"
+            className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400"
+            value={form.mof_number}
+            onChange={handleChange}
+            placeholder="MOF registration number (optional)"
           />
         </div>
         <div>
@@ -256,11 +273,11 @@ export default function NewClientPage() {
           >
             {loading ? "Creating..." : "Add Client"}
           </button>
-          
+
           {showPassword && (
             <button
               type="button"
-              onClick={() => router.push('/admin/clients')}
+              onClick={() => router.push("/admin/clients")}
               className="w-full py-4 rounded-xl bg-gray-100 text-gray-700 font-semibold border border-gray-200 hover:bg-gray-200 hover:scale-[1.02] transition-all duration-300"
             >
               Back to Clients

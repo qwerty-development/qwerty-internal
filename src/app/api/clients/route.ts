@@ -18,23 +18,25 @@ const createServiceClient = () => {
 };
 
 interface ClientUpdateData {
-  name: string;
-  contact_email?: string;
+  company_name: string;
+  company_email?: string;
+  contact_person_name?: string;
+  contact_person_email?: string;
   contact_phone?: string;
   address?: string;
+  mof_number?: string;
   notes?: string;
-  company_name?: string;
-  company_email?: string;
 }
 
 interface ClientCreateData {
-  name: string;
-  email: string;
-  phone?: string;
+  company_name: string;
+  company_email: string;
+  contact_person_name?: string;
+  contact_person_email?: string;
+  contact_phone?: string;
   address?: string;
+  mof_number?: string;
   notes?: string;
-  company_name?: string;
-  company_email?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -43,23 +45,23 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceClient();
 
     // Validate required fields
-    if (!clientData.name?.trim()) {
+    if (!clientData.company_name?.trim()) {
       return NextResponse.json(
-        { success: false, error: "Name is required" },
+        { success: false, error: "Company name is required" },
         { status: 400 }
       );
     }
 
-    if (!clientData.email?.trim()) {
+    if (!clientData.company_email?.trim()) {
       return NextResponse.json(
-        { success: false, error: "Email is required" },
+        { success: false, error: "Company email is required" },
         { status: 400 }
       );
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(clientData.email.trim())) {
+    if (!emailRegex.test(clientData.company_email.trim())) {
       return NextResponse.json(
         { success: false, error: "Please enter a valid email address" },
         { status: 400 }
@@ -72,7 +74,7 @@ export async function POST(request: NextRequest) {
     // Create Supabase Auth user
     const { data: authUser, error: authError } =
       await supabase.auth.admin.createUser({
-        email: clientData.email.trim(),
+        email: clientData.company_email.trim(),
         password: password,
         email_confirm: true,
       });
@@ -100,8 +102,8 @@ export async function POST(request: NextRequest) {
       .from("users")
       .insert({
         id: authUser.user.id,
-        name: clientData.name.trim(),
-        phone: clientData.phone?.trim() || null,
+        name: clientData.company_name.trim(),
+        phone: clientData.contact_phone?.trim() || null,
         role: "client",
       })
       .select()
@@ -124,13 +126,14 @@ export async function POST(request: NextRequest) {
     const { data: client, error: clientError } = await supabase
       .from("clients")
       .insert({
-        name: clientData.name.trim(),
-        contact_email: clientData.email.trim(),
-        contact_phone: clientData.phone?.trim() || null,
+        company_name: clientData.company_name.trim(),
+        company_email: clientData.company_email.trim(),
+        contact_person_name: clientData.contact_person_name?.trim() || null,
+        contact_person_email: clientData.contact_person_email?.trim() || null,
+        contact_phone: clientData.contact_phone?.trim() || null,
         address: clientData.address?.trim() || null,
+        mof_number: clientData.mof_number?.trim() || null,
         notes: clientData.notes?.trim() || null,
-        company_name: clientData.company_name?.trim() || null,
-        company_email: clientData.company_email?.trim() || null,
         user_id: authUser.user.id,
       })
       .select()
@@ -151,7 +154,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store the password in cache for later retrieval
-    storePassword(client.id, password, clientData.email.trim());
+    storePassword(client.id, password, clientData.company_email.trim());
 
     return NextResponse.json({
       success: true,
@@ -203,13 +206,14 @@ export async function PUT(
       supabase
         .from("clients")
         .update({
-          name: updateData.name.trim(),
+          company_name: updateData.company_name.trim(),
+          company_email: updateData.company_email?.trim() || null,
+          contact_person_name: updateData.contact_person_name?.trim() || null,
+          contact_person_email: updateData.contact_person_email?.trim() || null,
           contact_phone: updateData.contact_phone?.trim() || null,
           address: updateData.address?.trim() || null,
-          contact_email: updateData.contact_email?.trim() || null,
+          mof_number: updateData.mof_number?.trim() || null,
           notes: updateData.notes?.trim() || null,
-          company_name: updateData.company_name?.trim() || null,
-          company_email: updateData.company_email?.trim() || null,
         })
         .eq("id", clientId)
         .select()
@@ -219,7 +223,7 @@ export async function PUT(
       supabase
         .from("users")
         .update({
-          name: updateData.name.trim(),
+          name: updateData.company_name.trim(),
           phone: updateData.contact_phone?.trim() || null,
         })
         .eq("id", clientData.user_id)

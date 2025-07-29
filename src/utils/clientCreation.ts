@@ -1,11 +1,12 @@
 interface ClientData {
-  name: string;
-  email: string;
-  phone?: string;
+  company_name: string;
+  company_email: string;
+  contact_person_name?: string;
+  contact_person_email?: string;
+  contact_phone?: string;
   address?: string;
+  mof_number?: string;
   notes?: string;
-  company_name?: string;
-  company_email?: string;
 }
 
 export async function createClientUser(clientData: ClientData) {

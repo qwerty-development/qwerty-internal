@@ -17,12 +17,14 @@ export default function EditClientPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    name: "",
-    contact_phone: "",
-    address: "",
-    contact_email: "",
     company_name: "",
     company_email: "",
+    contact_person_name: "",
+    contact_person_email: "",
+    contact_phone: "",
+    address: "",
+    mof_number: "",
+    notes: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,12 +49,14 @@ export default function EditClientPage() {
 
         setClient(clientData);
         setFormData({
-          name: clientData.name || "",
-          contact_phone: clientData.contact_phone || "",
-          address: clientData.address || "",
-          contact_email: clientData.contact_email || "",
           company_name: clientData.company_name || "",
           company_email: clientData.company_email || "",
+          contact_person_name: clientData.contact_person_name || "",
+          contact_person_email: clientData.contact_person_email || "",
+          contact_phone: clientData.contact_phone || "",
+          address: clientData.address || "",
+          mof_number: clientData.mof_number || "",
+          notes: clientData.notes || "",
         });
       } catch (err) {
         setError("Failed to load client data");
@@ -69,15 +73,15 @@ export default function EditClientPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
+    if (!formData.company_name.trim()) {
+      newErrors.company_name = "Company name is required";
     }
 
     if (
-      formData.contact_email &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)
+      formData.company_email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.company_email)
     ) {
-      newErrors.contact_email = "Please enter a valid email address";
+      newErrors.company_email = "Please enter a valid email address";
     }
 
     setErrors(newErrors);
@@ -95,12 +99,14 @@ export default function EditClientPage() {
 
     try {
       const result = await updateClientUser(clientId, {
-        name: formData.name.trim(),
+        company_name: formData.company_name.trim(),
+        company_email: formData.company_email.trim() || undefined,
+        contact_person_name: formData.contact_person_name.trim() || undefined,
+        contact_person_email: formData.contact_person_email.trim() || undefined,
         contact_phone: formData.contact_phone.trim() || undefined,
         address: formData.address.trim() || undefined,
-        contact_email: formData.contact_email.trim() || undefined,
-        company_name: formData.company_name.trim() || undefined,
-        company_email: formData.company_email.trim() || undefined,
+        mof_number: formData.mof_number.trim() || undefined,
+        notes: formData.notes.trim() || undefined,
       });
 
       if (result.success) {
@@ -181,24 +187,24 @@ export default function EditClientPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label
-              htmlFor="name"
+              htmlFor="company_name"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Name *
+              Company Name *
             </label>
             <input
               type="text"
-              id="name"
-              name="name"
-              value={formData.name}
+              id="company_name"
+              name="company_name"
+              value={formData.company_name}
               onChange={handleChange}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.name ? "border-red-300" : "border-gray-300"
+                errors.company_name ? "border-red-300" : "border-gray-300"
               }`}
-              placeholder="Enter client name"
+              placeholder="Enter company name"
             />
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+            {errors.company_name && (
+              <p className="mt-1 text-sm text-red-600">{errors.company_name}</p>
             )}
           </div>
 
@@ -222,27 +228,63 @@ export default function EditClientPage() {
 
           <div>
             <label
-              htmlFor="contact_email"
+              htmlFor="company_email"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Email Address
+              Company Email
             </label>
             <input
               type="email"
-              id="contact_email"
-              name="contact_email"
-              value={formData.contact_email}
+              id="company_email"
+              name="company_email"
+              value={formData.company_email}
               onChange={handleChange}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.contact_email ? "border-red-300" : "border-gray-300"
+                errors.company_email ? "border-red-300" : "border-gray-300"
               }`}
-              placeholder="Enter email address"
+              placeholder="Enter company email address"
             />
-            {errors.contact_email && (
+            {errors.company_email && (
               <p className="mt-1 text-sm text-red-600">
-                {errors.contact_email}
+                {errors.company_email}
               </p>
             )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="contact_person_name"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Contact Person Name
+            </label>
+            <input
+              type="text"
+              id="contact_person_name"
+              name="contact_person_name"
+              value={formData.contact_person_name}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter contact person name"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="contact_person_email"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Contact Person Email
+            </label>
+            <input
+              type="email"
+              id="contact_person_email"
+              name="contact_person_email"
+              value={formData.contact_person_email}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter contact person email"
+            />
           </div>
 
           <div>
@@ -265,37 +307,37 @@ export default function EditClientPage() {
 
           <div>
             <label
-              htmlFor="company_name"
+              htmlFor="mof_number"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Company Name
+              MOF Number
             </label>
             <input
               type="text"
-              id="company_name"
-              name="company_name"
-              value={formData.company_name}
+              id="mof_number"
+              name="mof_number"
+              value={formData.mof_number}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter company name (optional)"
+              placeholder="Enter MOF registration number"
             />
           </div>
 
           <div>
             <label
-              htmlFor="company_email"
+              htmlFor="notes"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Company Email
+              Notes
             </label>
-            <input
-              type="email"
-              id="company_email"
-              name="company_email"
-              value={formData.company_email}
+            <textarea
+              id="notes"
+              name="notes"
+              value={formData.notes}
               onChange={handleChange}
+              rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter company email (optional)"
+              placeholder="Enter additional notes"
             />
           </div>
 
