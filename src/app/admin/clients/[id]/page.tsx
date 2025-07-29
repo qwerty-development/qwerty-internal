@@ -218,7 +218,9 @@ export default function ClientDetailPage() {
       <div className="mb-8">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {client.company_name}
+            </h1>
             <p className="text-gray-600 mt-2">
               Client Details & Financial Summary
             </p>
@@ -249,40 +251,10 @@ export default function ClientDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-500">
-                Name
-              </label>
-              <p className="text-sm text-gray-900 mt-1">{client.name}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Phone
-              </label>
-              <p className="text-sm text-gray-900 mt-1">
-                {client.contact_phone || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Email
-              </label>
-              <p className="text-sm text-gray-900 mt-1">
-                {client.contact_email || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Address
-              </label>
-              <p className="text-sm text-gray-900 mt-1">
-                {client.address || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
                 Company Name
               </label>
               <p className="text-sm text-gray-900 mt-1">
-                {client.company_name || "Not provided"}
+                {client.company_name}
               </p>
             </div>
             <div>
@@ -291,6 +263,54 @@ export default function ClientDetailPage() {
               </label>
               <p className="text-sm text-gray-900 mt-1">
                 {client.company_email || "Not provided"}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Contact Person Name
+              </label>
+              <p className="text-sm text-gray-900 mt-1">
+                {client.contact_person_name || "Not provided"}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Contact Person Email
+              </label>
+              <p className="text-sm text-gray-900 mt-1">
+                {client.contact_person_email || "Not provided"}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Contact Phone
+              </label>
+              <p className="text-sm text-gray-900 mt-1">
+                {client.contact_phone || "Not provided"}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                MOF Number
+              </label>
+              <p className="text-sm text-gray-900 mt-1">
+                {client.mof_number || "Not provided"}
+              </p>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-500">
+                Address
+              </label>
+              <p className="text-sm text-gray-900 mt-1">
+                {client.address || "Not provided"}
+              </p>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-500">
+                Notes
+              </label>
+              <p className="text-sm text-gray-900 mt-1">
+                {client.notes || "No notes"}
               </p>
             </div>
           </div>

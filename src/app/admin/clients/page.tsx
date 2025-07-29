@@ -19,7 +19,7 @@ export default function ClientListPage() {
     const { data, error } = await supabase
       .from("clients")
       .select(
-        "id, name, contact_email, contact_phone, address, regular_balance, paid_amount, notes, company_name, company_email"
+        "id, company_name, company_email, contact_person_name, contact_person_email, contact_phone, address, mof_number, notes, regular_balance, paid_amount"
       );
     if (error) {
       setError(error.message);
@@ -90,13 +90,13 @@ export default function ClientListPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
+                  Company
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
+                  Contact Person
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
+                  Contact Info
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Regular Balance
@@ -114,24 +114,38 @@ export default function ClientListPage() {
                 <tr key={client.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {client.name}
+                      {client.company_name}
                     </div>
-                    {client.company_name && (
-                      <div className="text-sm text-blue-600 font-medium">
-                        {client.company_name}
-                      </div>
-                    )}
                     {client.address && (
                       <div className="text-sm text-gray-500">
                         {client.address}
                       </div>
                     )}
+                    {client.mof_number && (
+                      <div className="text-sm text-blue-600 font-medium">
+                        MOF: {client.mof_number}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {client.contact_phone || "-"}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {client.contact_person_name || "-"}
+                    </div>
+                    {client.contact_person_email && (
+                      <div className="text-sm text-gray-500">
+                        {client.contact_person_email}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {client.contact_email || "-"}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {client.company_email || "-"}
+                    </div>
+                    {client.contact_phone && (
+                      <div className="text-sm text-gray-500">
+                        {client.contact_phone}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span

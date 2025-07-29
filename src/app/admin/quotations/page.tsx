@@ -29,7 +29,7 @@ type QuotationStatus = "Draft" | "Sent" | "Approved" | "Rejected" | "Converted";
 type SortableField =
   | "created_at"
   | "quotation_number"
-  | "client_name"
+  | "company_name"
   | "total_amount"
   | "issue_date"
   | "due_date";
@@ -38,10 +38,13 @@ type SortableField =
 interface Quotation {
   id: string;
   quotation_number: string;
-  client_name: string;
-  client_email: string;
-  client_phone: string;
+  company_name: string;
+  company_email: string;
+  contact_person_name: string;
+  contact_person_email: string;
+  contact_phone: string;
   description: string;
+  terms_and_conditions: string;
   total_amount: number;
   issue_date: string;
   due_date: string | null;
@@ -243,7 +246,7 @@ export default function QuotationsPage() {
 
   // Function to convert quotation to invoice
   const handleGeneratePDF = async (quotationId: string) => {
-    setGeneratingPDFs(prev => new Set(prev).add(quotationId));
+    setGeneratingPDFs((prev) => new Set(prev).add(quotationId));
     try {
       await generateQuotationPDF(quotationId);
       alert("PDF generated successfully!");
@@ -251,7 +254,7 @@ export default function QuotationsPage() {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Please try again.");
     } finally {
-      setGeneratingPDFs(prev => {
+      setGeneratingPDFs((prev) => {
         const newSet = new Set(prev);
         newSet.delete(quotationId);
         return newSet;
@@ -306,9 +309,15 @@ export default function QuotationsPage() {
       quotation.quotation_number
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      quotation.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      quotation.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       quotation.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quotation.client_email.toLowerCase().includes(searchTerm.toLowerCase());
+      quotation.company_email
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (quotation.contact_person_name &&
+        quotation.contact_person_name
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()));
 
     const matchesStatus =
       statusFilter === "all" || quotation.status === statusFilter;
@@ -494,13 +503,13 @@ export default function QuotationsPage() {
                 </th>
                 <th
                   className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${getHeaderStyle(
-                    "client_name"
+                    "company_name"
                   )}`}
-                  onClick={() => handleSort("client_name")}
+                  onClick={() => handleSort("company_name")}
                 >
                   <div className="flex items-center">
-                    Client
-                    {getSortIcon("client_name")}
+                    Company
+                    {getSortIcon("company_name")}
                   </div>
                 </th>
                 <th
@@ -578,14 +587,19 @@ export default function QuotationsPage() {
                         <div className="max-w-xs">
                           <div className="font-medium text-gray-900 truncate flex items-center">
                             <User className="w-4 h-4 text-gray-400 mr-2" />
-                            {quotation.client_name}
+                            {quotation.company_name}
                           </div>
                           <div className="text-sm text-gray-500 line-clamp-2">
-                            {quotation.client_email}
+                            {quotation.company_email}
                           </div>
-                          {quotation.client_phone && (
+                          {quotation.contact_person_name && (
+                            <div className="text-sm text-blue-600">
+                              {quotation.contact_person_name}
+                            </div>
+                          )}
+                          {quotation.contact_phone && (
                             <div className="text-sm text-gray-500">
-                              {quotation.client_phone}
+                              {quotation.contact_phone}
                             </div>
                           )}
                         </div>
@@ -638,7 +652,9 @@ export default function QuotationsPage() {
                             className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 disabled:bg-blue-25 disabled:text-blue-400 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
                           >
                             <Download className="w-3 h-3" />
-                            {generatingPDFs.has(quotation.id) ? "Generating..." : "PDF"}
+                            {generatingPDFs.has(quotation.id)
+                              ? "Generating..."
+                              : "PDF"}
                           </button>
                           <Link
                             href={`/admin/quotations/${quotation.id}/edit`}

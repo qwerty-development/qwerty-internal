@@ -27,11 +27,17 @@ import {
 interface Quotation {
   id: string;
   quotation_number: string;
-  client_name: string;
-  client_email: string;
-  client_phone: string;
+  company_name: string;
+  company_email: string;
+  contact_person_name: string;
+  contact_person_email: string;
+  contact_phone: string;
+  address: string;
+  mof_number: string;
+  notes: string;
   client_id: string | null;
   description: string;
+  terms_and_conditions: string;
   total_amount: number;
   issue_date: string;
   due_date: string | null;
@@ -498,7 +504,7 @@ export default function QuotationDetailPage() {
               <Download className="w-3 h-3" />
               {isGeneratingPDF ? "Generating..." : "PDF"}
             </button>
-            
+
             {quotation.status === "Sent" && (
               <>
                 <button
@@ -704,6 +710,20 @@ export default function QuotationDetailPage() {
               </div>
             </div>
           )}
+
+          {/* Terms and Conditions */}
+          {quotation.terms_and_conditions && (
+            <div className="bg-white rounded-lg shadow-md border p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Terms and Conditions
+              </h2>
+              <div className="prose max-w-none">
+                <p className="text-gray-900 whitespace-pre-wrap">
+                  {quotation.terms_and_conditions}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -717,32 +737,81 @@ export default function QuotationDetailPage() {
             <div className="space-y-3">
               <div>
                 <div className="text-sm font-medium text-gray-500 mb-1">
-                  Name
+                  Company Name
                 </div>
                 <div className="text-sm text-gray-900 font-medium">
-                  {quotation.client_name}
+                  {quotation.company_name}
                 </div>
               </div>
-              {quotation.client_email && (
+              {quotation.company_email && (
                 <div>
                   <div className="text-sm font-medium text-gray-500 mb-1 flex items-center gap-1">
                     <Mail className="w-3 h-3" />
-                    Email
+                    Company Email
                   </div>
                   <div className="text-sm text-gray-900">
-                    {quotation.client_email}
+                    {quotation.company_email}
                   </div>
                 </div>
               )}
-              {quotation.client_phone && (
+              {quotation.contact_person_name && (
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">
+                    Contact Person
+                  </div>
+                  <div className="text-sm text-gray-900">
+                    {quotation.contact_person_name}
+                  </div>
+                </div>
+              )}
+              {quotation.contact_person_email && (
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1 flex items-center gap-1">
+                    <Mail className="w-3 h-3" />
+                    Contact Email
+                  </div>
+                  <div className="text-sm text-gray-900">
+                    {quotation.contact_person_email}
+                  </div>
+                </div>
+              )}
+              {quotation.contact_phone && (
                 <div>
                   <div className="text-sm font-medium text-gray-500 mb-1 flex items-center gap-1">
                     <Phone className="w-3 h-3" />
-                    Phone
+                    Contact Phone
                   </div>
                   <div className="text-sm text-gray-900">
-                    {quotation.client_phone}
+                    {quotation.contact_phone}
                   </div>
+                </div>
+              )}
+              {quotation.mof_number && (
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">
+                    MOF Number
+                  </div>
+                  <div className="text-sm text-gray-900">
+                    {quotation.mof_number}
+                  </div>
+                </div>
+              )}
+              {quotation.address && (
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">
+                    Address
+                  </div>
+                  <div className="text-sm text-gray-900">
+                    {quotation.address}
+                  </div>
+                </div>
+              )}
+              {quotation.notes && (
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">
+                    Notes
+                  </div>
+                  <div className="text-sm text-gray-900">{quotation.notes}</div>
                 </div>
               )}
               {quotation.client_id && (
