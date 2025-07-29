@@ -137,36 +137,36 @@ const AdminNavigation = () => {
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
-      <div className="flex items-center mb-6">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4">
+      <div className="flex items-center mb-4">
         <div className="p-2 bg-gradient-to-br from-[#01303F] to-[#014a5f] rounded-lg mr-3">
-          <Settings className="w-6 h-6 text-white" />
+          <Settings className="w-5 h-5 text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-[#01303F]">
-          Navigation Menu
+        <h2 className="text-lg font-bold text-[#01303F]">
+          Navigation
         </h2>
       </div>
       
-      <div className="space-y-4">
+      <div className="space-y-2">
         {menuGroups.map((group) => {
           const isOpen = openGroups.has(group.name.toLowerCase().replace(/\s+/g, '-'));
           
           return (
-            <div key={group.name} className="border border-gray-200 rounded-xl overflow-hidden">
+            <div key={group.name} className="border border-gray-200 rounded-lg overflow-hidden">
               <button
                 onClick={() => toggleGroup(group.name.toLowerCase().replace(/\s+/g, '-'))}
-                className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 transition-all duration-200"
+                className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 transition-all duration-200"
               >
                 <div className="flex items-center">
-                  <div className="p-2 bg-gradient-to-br from-[#01303F] to-[#014a5f] rounded-lg mr-3">
-                    <group.icon className="w-5 h-5 text-white" />
+                  <div className="p-1.5 bg-gradient-to-br from-[#01303F] to-[#014a5f] rounded-lg mr-2">
+                    <group.icon className="w-4 h-4 text-white" />
                   </div>
-                  <span className="font-semibold text-[#01303F]">{group.name}</span>
+                  <span className="font-semibold text-[#01303F] text-sm">{group.name}</span>
                 </div>
                 {isOpen ? (
-                  <ChevronDown className="w-5 h-5 text-gray-600" />
+                  <ChevronDown className="w-4 h-4 text-gray-600" />
                 ) : (
-                  <ChevronRight className="w-5 h-5 text-gray-600" />
+                  <ChevronRight className="w-4 h-4 text-gray-600" />
                 )}
               </button>
               
@@ -176,15 +176,15 @@ const AdminNavigation = () => {
                     <Link
                       key={item.name}
                       href={item.href}
-                      className="flex items-center p-4 hover:bg-gray-50 transition-colors duration-200 border-b border-gray-100 last:border-b-0"
+                      className="flex items-center p-2.5 hover:bg-gray-50 transition-colors duration-200 border-b border-gray-100 last:border-b-0"
                     >
-                      <div className="p-2 bg-gray-100 rounded-lg mr-3">
-                        <item.icon className="w-4 h-4 text-gray-600" />
+                      <div className="p-1 bg-gray-100 rounded-lg mr-2">
+                        <item.icon className="w-3 h-3 text-gray-600" />
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{item.name}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-sm truncate">{item.name}</p>
                         {item.description && (
-                          <p className="text-sm text-gray-500">{item.description}</p>
+                          <p className="text-xs text-gray-500 truncate">{item.description}</p>
                         )}
                       </div>
                     </Link>

@@ -15,6 +15,12 @@ import {
   Bell,
   Palette,
   CreditCard,
+  TrendingUp,
+  Activity,
+  Calendar,
+  Receipt,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import AdminNavigation from "@/components/AdminNavigation";
 import Link from "next/link";
@@ -28,6 +34,7 @@ export default function HomePage() {
   const [user, setUser] = useState<any>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   // Dashboard statistics state
   const [stats, setStats] = useState({
@@ -234,439 +241,511 @@ export default function HomePage() {
     window.location.href = "/signin";
   };
 
+  const toggleSection = (sectionName: string) => {
+    const newExpandedSections = new Set(expandedSections);
+    if (newExpandedSections.has(sectionName)) {
+      // If clicking the same section, close it
+      newExpandedSections.delete(sectionName);
+    } else {
+      // If clicking a different section, close all others and open this one
+      newExpandedSections.clear();
+      newExpandedSections.add(sectionName);
+    }
+    setExpandedSections(newExpandedSections);
+  };
+
+  // Quick action cards data
+  const quickActions = [
+    {
+      title: "New Client",
+      href: "/admin/clients/new",
+      icon: Users,
+      color: "from-blue-500 to-indigo-600",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+    },
+    {
+      title: "New Invoice",
+      href: "/admin/invoices/new",
+      icon: FileText,
+      color: "from-emerald-500 to-teal-600",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+    },
+    {
+      title: "New Quotation",
+      href: "/admin/quotations/new",
+      icon: Quote,
+      color: "from-purple-500 to-indigo-600",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-200",
+    },
+    {
+      title: "Branding",
+      href: "/admin/branding",
+      icon: Palette,
+      color: "from-amber-500 to-orange-600",
+      bgColor: "bg-amber-50",
+      borderColor: "border-amber-200",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
-      {/* User Avatar/Profile */}
-      {user && (
-        <div className="absolute top-4 right-8 z-50">
-          <div className="relative">
-            <button
-              className="w-10 h-10 rounded-full border-2 border-gray-200 bg-gray-100 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-400"
-              onClick={() => setPanelOpen((open) => !open)}
-              aria-label="Open user panel"
-            >
-              {user.avatar_url ? (
-                <img
-                  src={user.avatar_url}
-                  alt="avatar"
-                  className="w-9 h-9 rounded-full object-cover"
-                />
-              ) : (
-                <span className="text-lg font-bold text-blue-900">
-                  {user.name ? user.name[0].toUpperCase() : "U"}
-                </span>
-              )}
-            </button>
-            {panelOpen && (
-              <div
-                ref={panelRef}
-                className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 p-6 z-50 animate-fade-in"
-              >
-                <div className="flex flex-col items-center mb-4">
-                  {user.avatar_url ? (
-                    <img
-                      src={user.avatar_url}
-                      alt="avatar"
-                      className="w-16 h-16 rounded-full object-cover mb-2"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-3xl font-bold text-blue-900 mb-2">
-                      {user.name ? user.name[0].toUpperCase() : "U"}
-                    </div>
-                  )}
-                  <div className="text-lg font-semibold text-gray-900">
-                    {user.name}
-                  </div>
-                  <div className="text-sm text-gray-500">{user.email}</div>
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-                >
-                  Sign Out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#01303F] via-[#014a5f] to-[#01303F]">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <div className="flex justify-center mb-6">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                <FileText className="w-12 h-12 text-white" />
-              </div>
+
             </div>
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 tracking-tight">
-              QWERTY
+              <img src="/white-logo-big.png" alt="QWERTY" className="h-32 md:h-60  mx-auto mb-4" />
               <span className="block text-3xl md:text-4xl font-light text-blue-100 mt-2">
                 Internal Management
               </span>
             </h1>
-            <p className="text-xl text-blue-100 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-blue-100 max-w-3xl mx-auto leading-relaxed mb-8">
               Streamline your client relationships and financial tracking with
               our comprehensive management system. Everything you need, all in
               one place.
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/admin/clients"
-                className="inline-flex items-center px-8 py-4 bg-white text-[#01303F] font-semibold rounded-xl hover:bg-blue-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-              >
-                <Users className="w-5 h-5 mr-2" />
-                Clients
-              </Link>
-              <Link
-                href="/admin/invoices"
-                className="inline-flex items-center px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-xl hover:bg-white/10 transition-all duration-200 transform hover:scale-105"
-              >
-                <FileText className="w-5 h-5 mr-2" />
-                Invoices
-              </Link>
-              <Link
-                href="/admin/subscriptions"
-                className="inline-flex items-center px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-xl hover:bg-white/10 transition-all duration-200 transform hover:scale-105"
-              >
-                <CreditCard className="w-5 h-5 mr-2" />
-                Subscriptions
-              </Link>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="inline-flex items-center px-8 py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <RefreshCw
-                  className={`w-5 h-5 mr-2 ${refreshing ? "animate-spin" : ""}`}
-                />
-                {refreshing ? "Refreshing..." : "Refresh"}
-              </button>
-            </div>
+            {lastUpdated && (
+              <div className="inline-flex items-center px-6 py-3 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white font-semibold rounded-xl">
+                <span className="text-blue-100">Updated: {lastUpdated.toLocaleTimeString()}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 transform hover:scale-105 transition-all duration-200">
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-[#01303F] to-[#014a5f] rounded-xl">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Total Clients
-                </p>
-                {loading ? (
-                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
-                ) : (
-                  <p className="text-3xl font-bold text-[#01303F]">
-                    {stats.totalClients}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 transform hover:scale-105 transition-all duration-200">
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Total Invoices
-                </p>
-                {loading ? (
-                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
-                ) : (
-                  <p className="text-3xl font-bold text-[#01303F]">
-                    {stats.totalInvoices}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 transform hover:scale-105 transition-all duration-200">
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl">
-                <DollarSign className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Outstanding</p>
-                {loading ? (
-                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
-                ) : (
-                  <p className="text-3xl font-bold text-[#01303F]">
-                    ${stats.totalOutstanding.toFixed(2)}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 transform hover:scale-105 transition-all duration-200">
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Tickets</p>
-                {loading ? (
-                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
-                ) : (
-                  <div>
-                    <p className="text-3xl font-bold text-[#01303F]">
-                      {stats.totalTickets}
-                    </p>
-                    {stats.pendingTickets > 0 && (
-                      <p className="text-sm text-orange-600 font-medium">
-                        {stats.pendingTickets} pending
-                      </p>
-                    )}
+      {/* Navigation Menu - Half in blue section, half out */}
+      <div className="relative -mt-8 mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Clients & Relationships Button */}
+            <div className="relative">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 overflow-hidden">
+                <button
+                  onClick={() => toggleSection('clients')}
+                  className="w-full flex items-center justify-center p-6 bg-transparent border border-blue-200/50 text-blue-700 font-semibold hover:bg-blue-50/50 transition-all duration-200 rounded-xl"
+                >
+                  <div className="flex items-center space-x-3">
+                    <Users className="w-6 h-6" />
+                    <span className="text-base">Clients & Relationships</span>
                   </div>
-                )}
+                  {expandedSections.has('clients') ? (
+                    <ChevronDown className="w-5 h-5 ml-2" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 ml-2" />
+                  )}
+                </button>
               </div>
+              {expandedSections.has('clients') && (
+                <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-white/20 p-4 space-y-2">
+                  <Link
+                    href="/admin/clients"
+                    className="flex items-center p-3 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-blue-100 rounded-lg mr-3">
+                      <Users className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">All Clients</span>
+                  </Link>
+                  <Link
+                    href="/admin/clients/new"
+                    className="flex items-center p-3 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-blue-100 rounded-lg mr-3">
+                      <Users className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">New Client</span>
+                  </Link>
+                  <Link
+                    href="/admin/updates"
+                    className="flex items-center p-3 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-blue-100 rounded-lg mr-3">
+                      <Bell className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">Updates</span>
+                  </Link>
+                  <Link
+                    href="/admin/tickets"
+                    className="flex items-center p-3 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-blue-100 rounded-lg mr-3">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">Tickets</span>
+                  </Link>
+                </div>
+              )}
             </div>
-          </div>
 
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 transform hover:scale-105 transition-all duration-200">
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl">
-                <CheckCircle className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Total Collected
-                </p>
-                {loading ? (
-                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
-                ) : (
-                  <p className="text-3xl font-bold text-[#01303F]">
-                    ${stats.totalCollected.toFixed(2)}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 transform hover:scale-105 transition-all duration-200">
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl">
-                <Quote className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Quotations</p>
-                {loading ? (
-                  <div className="h-8 bg-gray-200 rounded animate-pulse mt-1"></div>
-                ) : (
-                  <div>
-                    <p className="text-3xl font-bold text-[#01303F]">
-                      {stats.totalQuotations}
-                    </p>
-                    {stats.sentQuotations > 0 && (
-                      <p className="text-sm text-blue-600 font-medium">
-                        {stats.sentQuotations} sent
-                      </p>
-                    )}
+            {/* Financial Management Button */}
+            <div className="relative">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 overflow-hidden">
+                <button
+                  onClick={() => toggleSection('financial')}
+                  className="w-full flex items-center justify-center p-6 bg-transparent border border-emerald-200/50 text-emerald-700 font-semibold hover:bg-emerald-50/50 transition-all duration-200 rounded-xl"
+                >
+                  <div className="flex items-center space-x-3">
+                    <DollarSign className="w-6 h-6" />
+                    <span className="text-base">Financial Management</span>
                   </div>
-                )}
+                  {expandedSections.has('financial') ? (
+                    <ChevronDown className="w-5 h-5 ml-2" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 ml-2" />
+                  )}
+                </button>
               </div>
+              {expandedSections.has('financial') && (
+                <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-white/20 p-4 space-y-2">
+                  <Link
+                    href="/admin/invoices"
+                    className="flex items-center p-3 hover:bg-emerald-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-emerald-100 rounded-lg mr-3">
+                      <FileText className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">Invoices</span>
+                  </Link>
+                  <Link
+                    href="/admin/invoices/new"
+                    className="flex items-center p-3 hover:bg-emerald-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-emerald-100 rounded-lg mr-3">
+                      <FileText className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">New Invoice</span>
+                  </Link>
+                  <Link
+                    href="/admin/quotations"
+                    className="flex items-center p-3 hover:bg-emerald-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-emerald-100 rounded-lg mr-3">
+                      <Quote className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">Quotations</span>
+                  </Link>
+                  <Link
+                    href="/admin/quotations/new"
+                    className="flex items-center p-3 hover:bg-emerald-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-emerald-100 rounded-lg mr-3">
+                      <Quote className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">New Quotation</span>
+                  </Link>
+                  <Link
+                    href="/admin/receipts"
+                    className="flex items-center p-3 hover:bg-emerald-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-emerald-100 rounded-lg mr-3">
+                      <Receipt className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">Receipts</span>
+                  </Link>
+                  <Link
+                    href="/admin/subscriptions"
+                    className="flex items-center p-3 hover:bg-emerald-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-emerald-100 rounded-lg mr-3">
+                      <CreditCard className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">Subscriptions</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* System & Settings Button */}
+            <div className="relative">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 overflow-hidden">
+                <button
+                  onClick={() => toggleSection('settings')}
+                  className="w-full flex items-center justify-center p-6 bg-transparent border border-purple-200/50 text-purple-700 font-semibold hover:bg-purple-50/50 transition-all duration-200 rounded-xl"
+                >
+                  <div className="flex items-center space-x-3">
+                    <BarChart3 className="w-6 h-6" />
+                    <span className="text-base">System & Settings</span>
+                  </div>
+                  {expandedSections.has('settings') ? (
+                    <ChevronDown className="w-5 h-5 ml-2" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 ml-2" />
+                  )}
+                </button>
+              </div>
+              {expandedSections.has('settings') && (
+                <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-white/20 p-4 space-y-2">
+                  <Link
+                    href="/admin/branding"
+                    className="flex items-center p-3 hover:bg-purple-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-purple-100 rounded-lg mr-3">
+                      <Palette className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">Branding Settings</span>
+                  </Link>
+                  <Link
+                    href="/admin/debug"
+                    className="flex items-center p-3 hover:bg-purple-50/50 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="p-1.5 bg-purple-100 rounded-lg mr-3">
+                      <BarChart3 className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <span className="text-sm text-gray-700">Debug</span>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Last Updated Info */}
-      {lastUpdated && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-          <div className="text-center">
-            <p className="text-sm text-gray-500">
-              Last updated: {lastUpdated.toLocaleTimeString()}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Navigation Menu */}
-          <AdminNavigation />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Quick Actions */}
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {quickActions.map((action) => (
+              <Link
+                key={action.title}
+                href={action.href}
+                className={`group relative p-4 ${action.bgColor} ${action.borderColor} border rounded-xl hover:shadow-md transition-all duration-200 transform hover:scale-105`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 bg-gradient-to-br ${action.color} rounded-lg`}>
+                    <action.icon className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-medium text-gray-900">{action.title}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
 
-          {/* Recent Activity */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-            <div className="flex items-center mb-6">
-              <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg mr-3">
-                <BarChart3 className="w-6 h-6 text-white" />
+        {/* Metrics Section */}
+        <div className="space-y-8">
+          {/* Key Metrics - Full Width */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-[#01303F]">Key Metrics</h2>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold text-[#01303F]">
-                System Overview
-              </h2>
             </div>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
-                <div className="flex items-center">
-                  <div className="p-2 bg-emerald-500 rounded-lg mr-3">
-                    <CheckCircle className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Payment Receipts
-                  </span>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                <div className="p-2 bg-blue-500 rounded-lg w-fit mx-auto mb-2">
+                  <Users className="w-4 h-4 text-white" />
                 </div>
+                <p className="text-sm font-medium text-gray-600">Clients</p>
                 {loading ? (
-                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-6 bg-gray-200 rounded animate-pulse mt-1"></div>
                 ) : (
-                  <span className="text-lg font-bold text-[#01303F]">
-                    {stats.totalReceipts}
-                  </span>
+                  <p className="text-2xl font-bold text-[#01303F]">{stats.totalClients}</p>
                 )}
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-                <div className="flex items-center">
-                  <div className="p-2 bg-green-500 rounded-lg mr-3">
-                    <CheckCircle className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Fully Paid Invoices
-                  </span>
+              <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
+                <div className="p-2 bg-emerald-500 rounded-lg w-fit mx-auto mb-2">
+                  <FileText className="w-4 h-4 text-white" />
                 </div>
+                <p className="text-sm font-medium text-gray-600">Invoices</p>
                 {loading ? (
-                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-6 bg-gray-200 rounded animate-pulse mt-1"></div>
                 ) : (
-                  <span className="text-lg font-bold text-[#01303F]">
-                    {stats.fullyPaidInvoices}
-                  </span>
+                  <p className="text-2xl font-bold text-[#01303F]">{stats.totalInvoices}</p>
                 )}
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-100">
-                <div className="flex items-center">
-                  <div className="p-2 bg-amber-500 rounded-lg mr-3">
-                    <Clock className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Pending Payments
-                  </span>
+              <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100">
+                <div className="p-2 bg-amber-500 rounded-lg w-fit mx-auto mb-2">
+                  <DollarSign className="w-4 h-4 text-white" />
                 </div>
+                <p className="text-sm font-medium text-gray-600">Outstanding</p>
                 {loading ? (
-                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-6 bg-gray-200 rounded animate-pulse mt-1"></div>
                 ) : (
-                  <span className="text-lg font-bold text-[#01303F]">
-                    {stats.pendingPayments}
-                  </span>
+                  <p className="text-lg font-bold text-[#01303F]">${stats.totalOutstanding.toFixed(0)}</p>
                 )}
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                <div className="flex items-center">
-                  <div className="p-2 bg-blue-500 rounded-lg mr-3">
-                    <BarChart3 className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Partially Paid
-                  </span>
+              <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+                <div className="p-2 bg-purple-500 rounded-lg w-fit mx-auto mb-2">
+                  <CheckCircle className="w-4 h-4 text-white" />
                 </div>
+                <p className="text-sm font-medium text-gray-600">Collected</p>
                 {loading ? (
-                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-6 bg-gray-200 rounded animate-pulse mt-1"></div>
                 ) : (
-                  <span className="text-lg font-bold text-[#01303F]">
-                    {stats.partiallyPaid}
-                  </span>
+                  <p className="text-lg font-bold text-[#01303F]">${stats.totalCollected.toFixed(0)}</p>
                 )}
               </div>
+            </div>
+          </div>
 
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl border border-cyan-100">
-                <div className="flex items-center">
-                  <div className="p-2 bg-cyan-500 rounded-lg mr-3">
-                    <Quote className="w-4 h-4 text-white" />
+          {/* System Overview */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-[#01303F]">System Overview</h2>
+              <div className="p-2 bg-green-50 rounded-lg">
+                <Activity className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Financial Status */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Financial Status</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="text-sm text-gray-700">Paid Invoices</span>
+                    </div>
+                    {loading ? (
+                      <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                    ) : (
+                      <span className="text-sm font-bold text-[#01303F]">{stats.fullyPaidInvoices}</span>
+                    )}
                   </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Draft Quotations
-                  </span>
+                  
+                  <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-100">
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-4 h-4 text-amber-600" />
+                      <span className="text-sm text-gray-700">Pending</span>
+                    </div>
+                    {loading ? (
+                      <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                    ) : (
+                      <span className="text-sm font-bold text-[#01303F]">{stats.pendingPayments}</span>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="flex items-center space-x-2">
+                      <BarChart3 className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm text-gray-700">Partial</span>
+                    </div>
+                    {loading ? (
+                      <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                    ) : (
+                      <span className="text-sm font-bold text-[#01303F]">{stats.partiallyPaid}</span>
+                    )}
+                  </div>
                 </div>
-                {loading ? (
-                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
-                ) : (
-                  <span className="text-lg font-bold text-[#01303F]">
-                    {stats.draftQuotations}
-                  </span>
-                )}
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                <div className="flex items-center">
-                  <div className="p-2 bg-blue-500 rounded-lg mr-3">
-                    <Quote className="w-4 h-4 text-white" />
+              {/* Quotations */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Quotations</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-cyan-50 rounded-lg border border-cyan-100">
+                    <div className="flex items-center space-x-2">
+                      <Quote className="w-4 h-4 text-cyan-600" />
+                      <span className="text-sm text-gray-700">Draft</span>
+                    </div>
+                    {loading ? (
+                      <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                    ) : (
+                      <span className="text-sm font-bold text-[#01303F]">{stats.draftQuotations}</span>
+                    )}
                   </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Sent Quotations
-                  </span>
+                  
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="flex items-center space-x-2">
+                      <Quote className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm text-gray-700">Sent</span>
+                    </div>
+                    {loading ? (
+                      <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                    ) : (
+                      <span className="text-sm font-bold text-[#01303F]">{stats.sentQuotations}</span>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="text-sm text-gray-700">Approved</span>
+                    </div>
+                    {loading ? (
+                      <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                    ) : (
+                      <span className="text-sm font-bold text-[#01303F]">{stats.approvedQuotations}</span>
+                    )}
+                  </div>
                 </div>
-                {loading ? (
-                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
-                ) : (
-                  <span className="text-lg font-bold text-[#01303F]">
-                    {stats.sentQuotations}
-                  </span>
-                )}
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-                <div className="flex items-center">
-                  <div className="p-2 bg-green-500 rounded-lg mr-3">
-                    <CheckCircle className="w-4 h-4 text-white" />
+              {/* Support & Receipts */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Support & Receipts</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-100">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="w-4 h-4 text-purple-600" />
+                      <span className="text-sm text-gray-700">Tickets</span>
+                    </div>
+                    {loading ? (
+                      <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                    ) : (
+                      <div className="text-right">
+                        <span className="text-sm font-bold text-[#01303F]">{stats.totalTickets}</span>
+                        {stats.pendingTickets > 0 && (
+                          <p className="text-xs text-orange-600">{stats.pendingTickets} pending</p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Approved Quotations
-                  </span>
-                </div>
-                {loading ? (
-                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
-                ) : (
-                  <span className="text-lg font-bold text-[#01303F]">
-                    {stats.approvedQuotations}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
-                <div className="flex items-center">
-                  <div className="p-2 bg-purple-500 rounded-lg mr-3">
-                    <FileText className="w-4 h-4 text-white" />
+                  
+                  <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                    <div className="flex items-center space-x-2">
+                      <Receipt className="w-4 h-4 text-emerald-600" />
+                      <span className="text-sm text-gray-700">Receipts</span>
+                    </div>
+                    {loading ? (
+                      <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                    ) : (
+                      <span className="text-sm font-bold text-[#01303F]">{stats.totalReceipts}</span>
+                    )}
                   </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Converted Quotations
-                  </span>
+                  
+                  <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="w-4 h-4 text-indigo-600" />
+                      <span className="text-sm text-gray-700">Converted</span>
+                    </div>
+                    {loading ? (
+                      <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                    ) : (
+                      <span className="text-sm font-bold text-[#01303F]">{stats.convertedQuotations}</span>
+                    )}
+                  </div>
                 </div>
-                {loading ? (
-                  <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
-                ) : (
-                  <span className="text-lg font-bold text-[#01303F]">
-                    {stats.convertedQuotations}
-                  </span>
-                )}
               </div>
             </div>
           </div>
         </div>
 
         {/* Welcome Message */}
-        <div className="mt-16 text-center">
-          <div className="bg-gradient-to-r from-[#01303F] to-[#014a5f] rounded-3xl p-8 text-white">
-            <h3 className="text-2xl font-bold mb-4">
-              Welcome to QWERTY Internal Management
-            </h3>
-            <p className="text-lg text-blue-100 max-w-2xl mx-auto">
-              Your comprehensive solution for managing clients, invoices,
-              quotations, and financial tracking. Everything is designed to help
-              you stay organized and focused on growing your business.
-            </p>
+        <div className="mt-8">
+          <div className="bg-gradient-to-r from-[#01303F] to-[#014a5f] rounded-2xl p-6 text-white">
+            <div className="text-center">
+              <h3 className="text-xl font-bold mb-3">Welcome to QWERTY Internal Management</h3>
+              <p className="text-blue-100 max-w-2xl mx-auto">
+                Your comprehensive solution for managing clients, invoices, quotations, and financial tracking. 
+                Everything is designed to help you stay organized and focused on growing your business.
+              </p>
+            </div>
           </div>
         </div>
       </div>
