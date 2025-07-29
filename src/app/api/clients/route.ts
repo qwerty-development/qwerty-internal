@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { generateRandomPassword } from "@/utils/passwordGenerator";
-import { storePassword } from "@/utils/passwordCache";
+import { storePasswordInDatabase } from "@/utils/passwordService";
 
 // Create a service role client for admin operations
 const createServiceClient = () => {
@@ -153,8 +153,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store the password in cache for later retrieval
-    storePassword(client.id, password, clientData.company_email.trim());
+    // Store the password in database for later retrieval
+    const passwordStored = await storePasswordInDatabase(client.id, password, clientData.company_email.trim());
+    
+    if (!passwordStored) {
+      console.warn("Failed to store password in database for client:", client.id);
+    }
 
     return NextResponse.json({
       success: true,

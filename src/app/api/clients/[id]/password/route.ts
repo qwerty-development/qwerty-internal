@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getPassword } from "@/utils/passwordCache";
+import { getPasswordFromDatabase } from "@/utils/passwordService";
 
 // Create a service role client for admin operations
 const createServiceClient = () => {
@@ -29,7 +29,7 @@ export async function GET(
     // First, verify the client exists
     const { data: clientData, error: clientError } = await supabase
       .from("clients")
-      .select("contact_email")
+      .select("company_email")
       .eq("id", clientId)
       .single();
 
@@ -41,11 +41,11 @@ export async function GET(
       );
     }
 
-    // Get the password from cache
-    const cachedPassword = getPassword(clientId);
+    // Get the password from database
+    const cachedPassword = await getPasswordFromDatabase(clientId);
 
     if (!cachedPassword) {
-      console.error("Password API: No original password found in cache");
+      console.error("Password API: No original password found in database");
       return NextResponse.json(
         {
           success: false,
@@ -56,7 +56,7 @@ export async function GET(
       );
     }
 
-    console.log("Password API: Successfully retrieved password from cache");
+    console.log("Password API: Successfully retrieved password from database");
 
     return NextResponse.json({
       success: true,

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { removePasswordFromDatabase } from "@/utils/passwordService";
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = createServiceClient();
-  
+
   try {
     const resolvedParams = await params;
     const clientId = resolvedParams.id;
@@ -174,7 +175,13 @@ export async function DELETE(
       // Don't return error here as the database records are already deleted
     }
 
-    // 9. Delete files from storage (if storage is set up)
+    // 9. Remove password from storage
+    const passwordRemoved = await removePasswordFromDatabase(clientId);
+    if (!passwordRemoved) {
+      console.warn("Failed to remove password from storage for client:", clientId);
+    }
+
+    // 10. Delete files from storage (if storage is set up)
     if (fileUrls.length > 0) {
       try {
         // This will work once you set up Supabase Storage buckets
