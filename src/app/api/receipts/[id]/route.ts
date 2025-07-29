@@ -34,8 +34,8 @@ export async function GET(
         *,
         clients (
           id,
-          name,
-          contact_email,
+          company_name,
+          company_email,
           contact_phone,
           address
         ),

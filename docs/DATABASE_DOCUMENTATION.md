@@ -1,10 +1,12 @@
+Of course. Here is the updated database documentation based on the schema you provided.
+
 # Database Documentation
 
 ## Overview
 
 This document provides a comprehensive and accurate overview of the business management system's database schema. It is generated directly from a live database query and serves as the single source of truth for the project.
 
-The system manages clients, branding, quotations, invoices, receipts, and tickets, with a focus on a streamlined quotation-to-invoice workflow and customizable document generation.
+The system manages clients, branding, quotations, invoices, receipts, subscriptions, and tickets, with a focus on a streamlined quotation-to-invoice workflow and customizable document generation.
 
 ## Database Schema
 
@@ -27,11 +29,11 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 **Constraints**:
 
 - `users_pkey` (PRIMARY KEY) on `id`.
-- `profiles_id_fkey` (FOREIGN KEY) on `id` → `auth.users.id` **ON DELETE CASCADE**.
+- `profiles_id_fkey` (FOREIGN KEY) on `id` → `auth.users.id` **ON DELETE NO ACTION**.
 
 **Business Rules**:
 
-- This table is a public profile extension of the main Supabase `auth.users` table. Deleting a user in Supabase Auth will cascade and delete the corresponding profile here.
+- This table is a public profile extension of the main Supabase `auth.users` table.
 - There is **no** unique constraint on the `phone` number at the database level.
 
 ---
@@ -46,8 +48,8 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 
 - `id` (UUID, NOT NULL, PRIMARY KEY) - Unique client identifier.
 - `user_id` (UUID, FOREIGN KEY) - Links to the `users` table.
-- `company_name` (text, NOT NULL, UNIQUE) - Main company name (previously "name").
-- `company_email` (text) - Main company email address (previously "contact_email").
+- `company_name` (text, NOT NULL, UNIQUE) - Main company name.
+- `company_email` (text) - Main company email address.
 - `contact_person_name` (text) - Name of the primary contact person.
 - `contact_person_email` (text) - Email of the primary contact person.
 - `contact_phone` (text) - Client's phone number.
@@ -62,13 +64,13 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 **Constraints**:
 
 - `clients_pkey` (PRIMARY KEY) on `id`.
-- `clients_user_id_fkey` (FOREIGN KEY) on `user_id` → `users.id` **ON DELETE SET NULL**.
+- `clients_user_id_fkey` (FOREIGN KEY) on `user_id` → `users.id` **ON DELETE NO ACTION**.
 - `clients_company_name_key` (UNIQUE) on `company_name`.
 
 **Business Rules**:
 
 - Company names must be unique.
-- If a linked user is deleted, the `user_id` for that client will be set to `NULL`.
+- If a linked user is deleted, the application must handle the dangling `user_id` reference.
 
 ---
 
@@ -76,7 +78,7 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 
 **Purpose**: Stores company branding information for use in generated documents like PDFs.
 
-**Primary Key**: `id` (UUID)
+**Primary Key**: `id` (UUID, auto-generated with `gen_random_uuid()`)
 
 **Columns**:
 
@@ -128,10 +130,10 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 **Constraints**:
 
 - `invoices_pkey` (PRIMARY KEY) on `id`.
-- `invoices_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id` **ON DELETE CASCADE**.
-- `invoices_quotation_id_fkey` (FOREIGN KEY) on `quotation_id` → `quotations.id` **ON DELETE SET NULL**.
+- `invoices_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id` **ON DELETE NO ACTION**.
+- `invoices_quotation_id_fkey` (FOREIGN KEY) on `quotation_id` → `quotations.id` **ON DELETE NO ACTION**.
 - `invoices_invoice_number_key` (UNIQUE) on `invoice_number`.
-- `invoices_created_by_fkey` (FOREIGN KEY) on `created_by` → `users.id` **ON DELETE NO ACTION**.
+- `invoices_created_by_fkey` (FOREIGN KEY) on `created_by` → `auth.users.id` **ON DELETE NO ACTION**.
 
 **Business Rules**:
 
@@ -159,12 +161,34 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 **Constraints**:
 
 - `invoice_items_pkey` (PRIMARY KEY) on `id`.
-- `invoice_items_invoice_id_fkey` (FOREIGN KEY) on `invoice_id` → `invoices.id` **ON DELETE CASCADE**.
-- `unique_invoice_position` (UNIQUE) on `(invoice_id, position)`.
+- `invoice_items_invoice_id_fkey` (FOREIGN KEY) on `invoice_id` → `invoices.id` **ON DELETE NO ACTION**.
 
 **Business Rules**:
 
-- Items are automatically deleted when their parent invoice is deleted.
+- The application must handle the deletion of items when a parent invoice is deleted.
+
+---
+
+### Table: `password_storage`
+
+**Purpose**: Stores temporary, hashed passwords for clients.
+
+**Primary Key**: `id` (UUID, auto-generated with `gen_random_uuid()`)
+
+**Columns**:
+
+- `id` (UUID, NOT NULL, PRIMARY KEY) - Unique identifier.
+- `client_id` (UUID, NOT NULL, FOREIGN KEY, UNIQUE) - Links to the client.
+- `email` (text, NOT NULL) - Client's email associated with the password.
+- `password_hash` (text, NOT NULL) - Hashed version of the password.
+- `created_at` (timestamp with time zone, DEFAULT now()) - Record creation timestamp.
+- `expires_at` (timestamp with time zone, DEFAULT now() + 30 days) - When the password expires.
+
+**Constraints**:
+
+- `password_storage_pkey` (PRIMARY KEY) on `id`.
+- `password_storage_client_id_key` (UNIQUE) on `client_id`.
+- `password_storage_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id` **ON DELETE NO ACTION**.
 
 ---
 
@@ -187,11 +211,9 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 - `pdf_url` (text) - URL to generated PDF document.
 - `uses_items` (boolean, DEFAULT false) - Whether quotation uses the item-based system.
 - `created_by` (UUID, NOT NULL, FOREIGN KEY) - User who created the quotation.
-- `created_at` (timestamp with time zone, DEFAULT now()) - Creation timestamp.
-- `updated_at` (timestamp with time zone, DEFAULT now()) - Last update timestamp.
 - `terms_and_conditions` (text) - Terms and conditions for the quotation.
-- `company_name` (text) - Company name from quotation (matches clients.company_name).
-- `company_email` (text) - Company email from quotation (matches clients.company_email).
+- `company_name` (text) - Company name from quotation.
+- `company_email` (text) - Company email from quotation.
 - `contact_person_name` (text) - Contact person name from quotation.
 - `contact_person_email` (text) - Contact person email from quotation.
 - `contact_phone` (text) - Contact phone number from quotation.
@@ -204,13 +226,15 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 - `rejected_at` (timestamp with time zone) - When quotation was rejected.
 - `converted_to_invoice_id` (UUID, FOREIGN KEY) - Links to converted invoice.
 - `is_converted` (boolean, DEFAULT false) - Whether quotation was converted to invoice.
+- `created_at` (timestamp with time zone, DEFAULT now()) - Creation timestamp.
+- `updated_at` (timestamp with time zone, DEFAULT now()) - Last update timestamp.
 
 **Constraints**:
 
 - `quotations_pkey` (PRIMARY KEY) on `id`.
-- `quotations_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id` **ON DELETE CASCADE**.
+- `quotations_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id` **ON DELETE NO ACTION**.
 - `quotations_quotation_number_key` (UNIQUE) on `quotation_number`.
-- `quotations_created_by_fkey` (FOREIGN KEY) on `created_by` → `users.id` **ON DELETE NO ACTION**.
+- `quotations_created_by_fkey` (FOREIGN KEY) on `created_by` → `auth.users.id` **ON DELETE NO ACTION**.
 - `quotations_converted_to_invoice_id_fkey` (FOREIGN KEY) on `converted_to_invoice_id` → `invoices.id` **ON DELETE NO ACTION**.
 - `quotations_status_check` (CHECK) - Enforces that `status` must be one of: 'Draft', 'Sent', 'Approved', 'Rejected', 'Converted'.
 
@@ -236,8 +260,7 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 **Constraints**:
 
 - `quotation_items_pkey` (PRIMARY KEY) on `id`.
-- `quotation_items_quotation_id_fkey` (FOREIGN KEY) on `quotation_id` → `quotations.id` **ON DELETE CASCADE**.
-- `quotation_items_quotation_id_position_key` (UNIQUE) on `(quotation_id, position)`.
+- `quotation_items_quotation_id_fkey` (FOREIGN KEY) on `quotation_id` → `quotations.id` **ON DELETE NO ACTION**.
 
 ---
 
@@ -263,10 +286,36 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 **Constraints**:
 
 - `receipts_pkey` (PRIMARY KEY) on `id`.
-- `receipts_invoice_id_fkey` (FOREIGN KEY) on `invoice_id` → `invoices.id` **ON DELETE CASCADE**.
-- `receipts_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id` **ON DELETE CASCADE**.
+- `receipts_invoice_id_fkey` (FOREIGN KEY) on `invoice_id` → `invoices.id` **ON DELETE NO ACTION**.
+- `receipts_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id` **ON DELETE NO ACTION**.
 - `receipts_receipt_number_key` (UNIQUE) on `receipt_number`.
-- `receipts_created_by_fkey` (FOREIGN KEY) on `created_by` → `users.id` **ON DELETE NO ACTION**.
+- `receipts_created_by_fkey` (FOREIGN KEY) on `created_by` → `auth.users.id` **ON DELETE NO ACTION**.
+
+---
+
+### Table: `subscriptions`
+
+**Purpose**: Manages recurring service subscriptions.
+
+**Primary Key**: `id` (UUID, auto-generated with `gen_random_uuid()`)
+
+**Columns**:
+
+- `id` (UUID, NOT NULL, PRIMARY KEY) - Unique subscription identifier.
+- `subscription_name` (character varying, NOT NULL) - Name of the subscription.
+- `details` (text) - Description of the subscription.
+- `price` (numeric, NOT NULL) - Cost of the subscription.
+- `billing_period` (character varying, NOT NULL) - Billing frequency ('monthly' or 'annually').
+- `recurring_every` (integer, NOT NULL, DEFAULT 1) - Interval of the billing period (e.g., every 1 month).
+- `payment_date` (date, NOT NULL) - Date of the next payment.
+- `is_active` (boolean, DEFAULT true) - Whether the subscription is currently active.
+- `created_at` (timestamp with time zone, DEFAULT now()) - Creation timestamp.
+- `updated_at` (timestamp with time zone, DEFAULT now()) - Last update timestamp.
+
+**Constraints**:
+
+- `subscriptions_pkey` (PRIMARY KEY) on `id`.
+- `subscriptions_billing_period_check` (CHECK) on `billing_period` - Must be 'monthly' or 'annually'.
 
 ---
 
@@ -291,12 +340,12 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 **Constraints**:
 
 - `tickets_pkey` (PRIMARY KEY) on `id`.
-- `tickets_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id` **ON DELETE CASCADE**.
+- `tickets_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id` **ON DELETE NO ACTION**.
 
 **Business Rules**:
 
 - The `status` workflow ('pending', 'in_progress', 'resolved', 'closed') is an application-level convention and is **not** enforced by a database `CHECK` constraint.
-- If a client is deleted, all of their associated tickets will be automatically deleted.
+- If a client is deleted, the application must handle their associated tickets.
 
 ---
 
@@ -320,28 +369,20 @@ The system manages clients, branding, quotations, invoices, receipts, and ticket
 
 - `updates_pkey` (PRIMARY KEY) on `id`.
 - `updates_ticket_id_fkey` (FOREIGN KEY) on `ticket_id` → `tickets.id` **ON DELETE NO ACTION**.
-- `updates_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id` **ON DELETE CASCADE**.
+- `updates_client_id_fkey` (FOREIGN KEY) on `client_id` → `clients.id` **ON DELETE NO ACTION**.
 
 ---
 
 ## Version History
 
-- **Current Version**: 6.0
-- **Last Updated**: 2025-01-27
-- **Changes**:
-
-  - **`clients` Table**: Restructured to use Company Name as main identifier instead of Client Name. Renamed `name` to `company_name` and `contact_email` to `company_email`. Added new fields: `contact_person_name`, `contact_person_email`, and `mof_number`.
-  - **`quotations` Table**: Added `terms_and_conditions` field and new client-related fields to match the updated client structure: `company_name`, `company_email`, `contact_person_name`, `contact_person_email`, and `mof_number`. Kept existing `client_*` fields for backward compatibility but marked as deprecated.
-  - **Database Migration**: Created migration script to handle schema changes while preserving existing data.
-  - **General**: Updated documentation to reflect new schema structure and maintain backward compatibility during transition period.
-
-- **Previous Version**: 5.0
+- **Current Version**: 7.0
 - **Last Updated**: 2025-07-29
 - **Changes**:
-  - **New Table**: Added `branding_settings` to manage company branding for documents.
-  - **`clients` Table**: Added optional `company_name` and `company_email` fields.
-  - **Data Integrity**: Updated foreign key constraints for `tickets` and `updates` to use `ON DELETE CASCADE` where appropriate, ensuring that deleting a client also removes their related tickets and updates.
-  - **General**: Synchronized the entire document with the live database schema to serve as the definitive source of truth.
+  - **New Tables**: Added `password_storage` and `subscriptions` to the documentation.
+  - **Foreign Keys**: Updated all foreign key constraints to reflect the schema's `ON DELETE NO ACTION` default behavior. The previous documentation incorrectly listed `CASCADE` or `SET NULL` for several tables.
+  - **Key References**: Corrected foreign key references in `invoices`, `quotations`, and `receipts` to point to `auth.users.id` instead of `public.users.id`.
+  - **Unique Constraints**: Removed non-existent unique constraints from `invoice_items` and `quotation_items` documentation to align with the schema.
+  - **General**: Synchronized the entire document with the provided live database schema to serve as the definitive source of truth.
 
 ---
 

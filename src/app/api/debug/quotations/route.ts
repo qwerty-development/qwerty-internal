@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     // Fetch recent quotations
     const { data: quotations, error } = await supabase
       .from("quotations")
-      .select("id, quotation_number, status, client_name, created_at")
+              .select("id, quotation_number, status, company_name, created_at")
       .order("created_at", { ascending: false })
       .limit(10);
 

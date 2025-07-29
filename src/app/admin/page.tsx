@@ -14,7 +14,9 @@ import {
   Quote,
   Bell,
   Palette,
+  CreditCard,
 } from "lucide-react";
+import AdminNavigation from "@/components/AdminNavigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
@@ -325,18 +327,11 @@ export default function HomePage() {
                 Invoices
               </Link>
               <Link
-                href="/admin/quotations"
+                href="/admin/subscriptions"
                 className="inline-flex items-center px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-xl hover:bg-white/10 transition-all duration-200 transform hover:scale-105"
               >
-                <Quote className="w-5 h-5 mr-2" />
-                Quotations
-              </Link>
-              <Link
-                href="/admin/updates"
-                className="inline-flex items-center px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-xl hover:bg-white/10 transition-all duration-200 transform hover:scale-105"
-              >
-                <Bell className="w-5 h-5 mr-2" />
-                Updates
+                <CreditCard className="w-5 h-5 mr-2" />
+                Subscriptions
               </Link>
               <button
                 onClick={handleRefresh}
@@ -500,145 +495,8 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Quick Actions */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-            <div className="flex items-center mb-6">
-              <div className="p-2 bg-gradient-to-br from-[#01303F] to-[#014a5f] rounded-lg mr-3">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-[#01303F]">
-                Quick Actions
-              </h2>
-            </div>
-            <div className="space-y-4">
-              <Link
-                href="/admin/clients/new"
-                className="flex items-center p-4 bg-gradient-to-r from-[#01303F] to-[#014a5f] text-white rounded-xl hover:from-[#014a5f] hover:to-[#01303F] transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                <div className="p-2 bg-white/20 rounded-lg mr-4">
-                  <Plus className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-semibold">Create New Client</p>
-                  <p className="text-sm text-blue-100">
-                    Add a new client to your system
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href="/admin/invoices/new"
-                className="flex items-center p-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-teal-600 hover:to-emerald-500 transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                <div className="p-2 bg-white/20 rounded-lg mr-4">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-semibold">Create New Invoice</p>
-                  <p className="text-sm text-emerald-100">
-                    Generate an invoice for a client
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href="/admin/quotations/new"
-                className="flex items-center p-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                <div className="p-2 bg-white/20 rounded-lg mr-4">
-                  <Quote className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-semibold">Create New Quotation</p>
-                  <p className="text-sm text-cyan-100">
-                    Generate a quotation for a client
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href="/admin/clients"
-                className="flex items-center p-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-xl hover:from-slate-700 hover:to-slate-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                <div className="p-2 bg-white/20 rounded-lg mr-4">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-semibold">View All Clients</p>
-                  <p className="text-sm text-slate-200">
-                    Manage your client relationships
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href="/admin/invoices"
-                className="flex items-center p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-blue-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                <div className="p-2 bg-white/20 rounded-lg mr-4">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-semibold">View All Invoices</p>
-                  <p className="text-sm text-blue-200">
-                    Track payments and balances
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href="/admin/quotations"
-                className="flex items-center p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-indigo-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                <div className="p-2 bg-white/20 rounded-lg mr-4">
-                  <Quote className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-semibold">View All Quotations</p>
-                  <p className="text-sm text-indigo-200">
-                    Manage quotations and track status
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href="/admin/branding"
-                className="flex items-center p-4 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-xl hover:from-rose-600 hover:to-pink-500 transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                <div className="p-2 bg-white/20 rounded-lg mr-4">
-                  <Palette className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-semibold">PDF Branding Settings</p>
-                  <p className="text-sm text-pink-200">
-                    Customize company branding for all PDFs
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href="/admin/tickets"
-                className="flex items-center p-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 transform hover:scale-105 shadow-lg relative"
-              >
-                <div className="p-2 bg-white/20 rounded-lg mr-4">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-semibold">Manage Tickets</p>
-                  <p className="text-sm text-purple-200">
-                    {stats.pendingTickets > 0
-                      ? `${stats.pendingTickets} pending tickets`
-                      : "View all tickets"}
-                  </p>
-                </div>
-                {stats.unviewedTickets > 0 && (
-                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                    {stats.unviewedTickets > 9 ? "9+" : stats.unviewedTickets}
-                  </div>
-                )}
-              </Link>
-            </div>
-          </div>
+          {/* Navigation Menu */}
+          <AdminNavigation />
 
           {/* Recent Activity */}
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">

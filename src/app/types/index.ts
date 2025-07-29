@@ -1,11 +1,18 @@
 export interface Client {
   id: string;
-  name: string;
-  phone?: string;
+  company_name: string;
+  contact_person_name?: string;
+  contact_person_email?: string;
+  contact_phone?: string;
   address?: string;
-  email?: string;
-  regularBalance: number;
-  paidAmount: number;
+  company_email?: string;
+  mof_number?: string;
+  regular_balance: number;
+  paid_amount: number;
+  notes?: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface InvoiceItem {

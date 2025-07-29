@@ -64,7 +64,7 @@ export default function DeleteClientDialog({
               <div className="bg-red-50 border border-red-200 rounded-md p-4">
                 <p className="text-sm text-red-800">
                   Are you sure you want to delete{" "}
-                  <strong>{summary.client.name}</strong>? This will permanently
+                  <strong>{summary.client.company_name}</strong>? This will permanently
                   remove all associated data.
                 </p>
               </div>

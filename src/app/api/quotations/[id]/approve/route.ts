@@ -68,12 +68,12 @@ export async function POST(
     let clientId = quotation.client_id;
 
     // If no client is assigned, create one from quotation data
-    if (!clientId && quotation.client_name) {
-      // Check if client with this name already exists
+    if (!clientId && quotation.company_name) {
+      // Check if client with this company name already exists
       const { data: existingClient } = await supabase
         .from("clients")
         .select("id")
-        .eq("name", quotation.client_name)
+        .eq("company_name", quotation.company_name)
         .single();
 
       if (existingClient) {
@@ -83,8 +83,8 @@ export async function POST(
         const { data: newClient, error: clientError } = await supabase
           .from("clients")
           .insert({
-            name: quotation.client_name,
-            contact_email:
+            company_name: quotation.company_name,
+            company_email:
               quotation.client_contact_email || quotation.client_email || null,
             contact_phone:
               quotation.client_contact_phone || quotation.client_phone || null,

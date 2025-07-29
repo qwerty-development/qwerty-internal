@@ -43,8 +43,8 @@ export default function ReceiptDetailPage() {
             *,
             clients (
               id,
-              name,
-              contact_email,
+              company_name,
+              company_email,
               contact_phone,
               address
             ),
@@ -347,7 +347,7 @@ export default function ReceiptDetailPage() {
                   Client Name
                 </label>
                 <p className="text-sm text-gray-900 mt-1 font-medium">
-                  {client.name}
+                  {client.company_name}
                 </p>
               </div>
               <div>
@@ -355,7 +355,7 @@ export default function ReceiptDetailPage() {
                   Contact Email
                 </label>
                 <p className="text-sm text-gray-900 mt-1">
-                  {client.contact_email || "Not provided"}
+                                      {client.company_email || "Not provided"}
                 </p>
               </div>
               <div>

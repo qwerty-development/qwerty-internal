@@ -35,8 +35,8 @@ interface Ticket {
   viewed: boolean | null; // Can be null
   clients: { // The related client record can be null
     id: string;
-    name: string;
-    contact_email: string;
+    company_name: string;
+    company_email: string;
   } | null;
 }
 
@@ -83,8 +83,8 @@ export default function AdminTicketsPage() {
           viewed,
           clients (
             id,
-            name,
-            contact_email
+            company_name,
+            company_email
           )
         `
         )
@@ -169,7 +169,7 @@ export default function AdminTicketsPage() {
     const matchesSearch =
       searchTerm === "" ||
       ticket.title.toLowerCase().includes(lowerCaseSearchTerm) ||
-      (ticket.clients?.name ?? "").toLowerCase().includes(lowerCaseSearchTerm) ||
+              (ticket.clients?.company_name ?? "").toLowerCase().includes(lowerCaseSearchTerm) ||
       ticket.description.toLowerCase().includes(lowerCaseSearchTerm);
 
     return matchesStatus && matchesSearch;
@@ -446,10 +446,10 @@ export default function AdminTicketsPage() {
                           <div>
                             {/* Safely access client data with fallbacks */}
                             <div className="text-sm font-medium text-gray-900">
-                              {ticket.clients?.name || "N/A"}
+                              {ticket.clients?.company_name || "N/A"}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {ticket.clients?.contact_email || "No email"}
+                              {ticket.clients?.company_email || "No email"}
                             </div>
                           </div>
                         </div>

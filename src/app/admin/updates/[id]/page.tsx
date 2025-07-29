@@ -18,7 +18,7 @@ export default function UpdateDetailPage() {
     const fetchUpdate = async () => {
       const { data, error } = await supabase
         .from("updates")
-        .select(`*, clients(id,name), tickets(id,title)`) // join relations
+        .select(`*, clients(id,company_name), tickets(id,title)`) // join relations
         .eq("id", id)
         .single();
 
@@ -68,7 +68,7 @@ export default function UpdateDetailPage() {
         <div className="mb-4 text-gray-700 whitespace-pre-line">{update.content}</div>
         <div className="text-sm text-gray-500">Type: {update.update_type}</div>
         <div className="text-sm text-gray-500 mt-1">
-          Audience: {update.client_id ? update.clients?.name || "-" : "All Customers"}
+                      Audience: {update.client_id ? update.clients?.company_name || "-" : "All Customers"}
         </div>
         {update.tickets && (
           <div className="text-sm text-gray-500 mt-1">Attached Ticket: {update.tickets?.title}</div>

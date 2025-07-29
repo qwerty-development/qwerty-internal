@@ -113,9 +113,9 @@ export default function DebugPage() {
               {clients.map((client) => (
                 <div key={client.id} className="p-3 bg-gray-50 rounded-md">
                   <p className="font-medium">ID: {client.id}</p>
-                  <p className="text-sm text-gray-600">Name: {client.name}</p>
+                  <p className="text-sm text-gray-600">Company Name: {client.company_name}</p>
                   <p className="text-sm text-gray-600">
-                    Email: {client.contact_email}
+                    Email: {client.company_email}
                   </p>
                 </div>
               ))}

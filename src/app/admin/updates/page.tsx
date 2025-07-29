@@ -47,7 +47,7 @@ export default function AdminUpdatesPage() {
       const { data, error } = await supabase
         .from("updates")
         .select(
-          `id, title, content, update_type, created_at, client_id, ticket_id, clients(id,name), tickets(id,title)`
+          `id, title, content, update_type, created_at, client_id, ticket_id, clients(id,company_name), tickets(id,title)`
         )
         .order(sortField, { ascending: sortDirection === "asc" });
 
@@ -109,7 +109,7 @@ export default function AdminUpdatesPage() {
       searchTerm === "" ||
       upd.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       upd.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (upd.clients?.name && upd.clients.name.toLowerCase().includes(searchTerm.toLowerCase()));
+              (upd.clients?.company_name && upd.clients.company_name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return matchesType && matchesSearch;
   });
@@ -242,7 +242,7 @@ export default function AdminUpdatesPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {upd.client_id ? upd.clients?.name || "-" : "All Customers"}
+                        {upd.client_id ? upd.clients?.company_name || "-" : "All Customers"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <Link

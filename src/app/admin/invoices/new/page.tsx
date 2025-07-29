@@ -91,8 +91,8 @@ export default function CreateInvoicePage() {
       try {
         const { data, error } = await supabase
           .from("clients")
-          .select("id, name")
-          .order("name");
+          .select("id, company_name")
+          .order("company_name");
 
         if (error) {
           setError(error.message);
@@ -272,7 +272,7 @@ export default function CreateInvoicePage() {
               <option value="">Select a client</option>
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
-                  {client.name}
+                  {client.company_name}
                 </option>
               ))}
             </select>

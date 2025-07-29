@@ -211,7 +211,7 @@ export async function DELETE(
       success: true,
       message: "Client and all related data deleted successfully",
       summary: {
-        client_name: client.name,
+        company_name: client.company_name,
         files_deleted: fileUrls.length,
       },
     });

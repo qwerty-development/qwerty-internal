@@ -63,8 +63,8 @@ interface QuotationItem {
 
 interface Client {
   id: string;
-  name: string;
-  contact_email: string;
+  company_name: string;
+  company_email: string;
   contact_phone: string;
 }
 
@@ -128,8 +128,8 @@ export default function QuotationDetailPage() {
     try {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, contact_email, contact_phone")
-        .order("name");
+        .select("id, company_name, company_email, contact_phone")
+        .order("company_name");
 
       if (error) {
         throw error;
@@ -571,7 +571,7 @@ export default function QuotationDetailPage() {
               <option value="">Select a client...</option>
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
-                  {client.name} ({client.contact_email})
+                                          {client.company_name} ({client.company_email})
                 </option>
               ))}
             </select>

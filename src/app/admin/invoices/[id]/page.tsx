@@ -86,7 +86,7 @@ export default function InvoiceDetailPage() {
         if (invoiceData.client_id) {
           const { data: clientData, error: clientError } = await supabase
             .from("clients")
-            .select("id, name, contact_email, contact_phone, address")
+            .select("id, company_name, company_email, contact_phone, address")
             .eq("id", invoiceData.client_id)
             .single();
 
@@ -362,7 +362,7 @@ export default function InvoiceDetailPage() {
                 Client
               </label>
               <p className="text-sm text-gray-900 mt-1">
-                {client ? client.name : "Client not found"}
+                {client ? client.company_name : "Client not found"}
               </p>
             </div>
             <div>

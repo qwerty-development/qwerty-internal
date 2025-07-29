@@ -228,7 +228,7 @@ export default function CreateUpdatePage() {
               <option value="all">All Customers</option>
               {clients.map((client) => (
                 <option key={client.id} value={client.id} className="capitalize">
-                  {client.name}
+                  {client.company_name}
                 </option>
               ))}
             </select>

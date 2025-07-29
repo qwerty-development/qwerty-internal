@@ -33,7 +33,7 @@ export default function InvoiceListPage() {
           *,
           clients (
             id,
-            name
+            company_name
           )
         `
         )
@@ -131,7 +131,7 @@ export default function InvoiceListPage() {
 
   const getClientName = (clientId: string) => {
     const invoice = invoices.find((inv) => inv.client_id === clientId);
-    return invoice?.clients?.name || "Unknown Client";
+    return invoice?.clients?.company_name || "Unknown Client";
   };
 
   if (loading) {
@@ -294,7 +294,7 @@ export default function InvoiceListPage() {
                     {invoice.invoice_number}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {invoice.clients?.name || "Unknown Client"}
+                    {invoice.clients?.company_name || "Unknown Client"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {new Date(invoice.issue_date).toLocaleDateString()}

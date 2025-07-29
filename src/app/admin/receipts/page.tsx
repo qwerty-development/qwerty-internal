@@ -51,7 +51,7 @@ export default function ReceiptsPage() {
           *,
           clients (
             id,
-            name
+            company_name
           ),
           invoices (
             id,
@@ -176,7 +176,7 @@ export default function ReceiptsPage() {
     const matchesSearch =
       searchTerm === "" ||
       receipt.receipt_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      receipt.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              receipt.clients?.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       receipt.invoices?.invoice_number
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
@@ -504,7 +504,7 @@ export default function ReceiptsPage() {
                     {receipt.receipt_number}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {receipt.clients?.name || "Unknown Client"}
+                    {receipt.clients?.company_name || "Unknown Client"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {receipt.invoices?.invoice_number || "Unknown Invoice"}

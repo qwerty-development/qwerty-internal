@@ -16,10 +16,13 @@ const createServiceClient = () => {
 };
 
 interface ClientUpdateData {
-  name: string;
-  contact_email?: string;
+  company_name: string;
+  contact_person_name?: string;
+  contact_person_email?: string;
   contact_phone?: string;
   address?: string;
+  company_email?: string;
+  mof_number?: string;
   notes?: string;
 }
 
@@ -50,10 +53,13 @@ export async function PUT(
       supabase
         .from("clients")
         .update({
-          name: updateData.name.trim(),
+          company_name: updateData.company_name.trim(),
+          contact_person_name: updateData.contact_person_name?.trim() || null,
+          contact_person_email: updateData.contact_person_email?.trim() || null,
           contact_phone: updateData.contact_phone?.trim() || null,
           address: updateData.address?.trim() || null,
-          contact_email: updateData.contact_email?.trim() || null,
+          company_email: updateData.company_email?.trim() || null,
+          mof_number: updateData.mof_number?.trim() || null,
           notes: updateData.notes?.trim() || null,
         })
         .eq("id", clientId)
@@ -63,7 +69,7 @@ export async function PUT(
       supabase
         .from("users")
         .update({
-          name: updateData.name.trim(),
+          name: updateData.contact_person_name?.trim() || updateData.company_name.trim(),
           phone: updateData.contact_phone?.trim() || null,
         })
         .eq("id", clientData.user_id)

@@ -33,8 +33,8 @@ interface Ticket {
   status: TicketStatus;
   created_at: string;
   clients: {
-    name: string;
-    contact_email: string;
+    company_name: string;
+    company_email: string;
   };
   viewed: boolean;
 }
@@ -65,7 +65,7 @@ export default function TicketDetailPage() {
         .select(
           `
           *,
-          clients(name, contact_email)
+          clients(company_name, company_email)
         `
         )
         .eq("id", params.id)
@@ -266,9 +266,9 @@ export default function TicketDetailPage() {
                 <User className="w-4 h-4 text-gray-400 mr-2" />
                 <div>
                   <p className="font-medium text-gray-900">
-                    {ticket.clients.name}
+                    {ticket.clients.company_name}
                   </p>
-                  <p className="text-sm text-gray-600">{ticket.clients.contact_email}</p>
+                  <p className="text-sm text-gray-600">{ticket.clients.company_email}</p>
                 </div>
               </div>
             </div>
