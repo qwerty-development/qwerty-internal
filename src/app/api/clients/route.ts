@@ -23,6 +23,8 @@ interface ClientUpdateData {
   contact_phone?: string;
   address?: string;
   notes?: string;
+  company_name?: string;
+  company_email?: string;
 }
 
 interface ClientCreateData {
@@ -31,6 +33,8 @@ interface ClientCreateData {
   phone?: string;
   address?: string;
   notes?: string;
+  company_name?: string;
+  company_email?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -125,6 +129,8 @@ export async function POST(request: NextRequest) {
         contact_phone: clientData.phone?.trim() || null,
         address: clientData.address?.trim() || null,
         notes: clientData.notes?.trim() || null,
+        company_name: clientData.company_name?.trim() || null,
+        company_email: clientData.company_email?.trim() || null,
         user_id: authUser.user.id,
       })
       .select()
@@ -202,6 +208,8 @@ export async function PUT(
           address: updateData.address?.trim() || null,
           contact_email: updateData.contact_email?.trim() || null,
           notes: updateData.notes?.trim() || null,
+          company_name: updateData.company_name?.trim() || null,
+          company_email: updateData.company_email?.trim() || null,
         })
         .eq("id", clientId)
         .select()

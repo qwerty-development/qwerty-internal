@@ -19,7 +19,7 @@ export default function ClientListPage() {
     const { data, error } = await supabase
       .from("clients")
       .select(
-        "id, name, contact_email, contact_phone, address, regular_balance, paid_amount, notes"
+        "id, name, contact_email, contact_phone, address, regular_balance, paid_amount, notes, company_name, company_email"
       );
     if (error) {
       setError(error.message);
@@ -116,6 +116,11 @@ export default function ClientListPage() {
                     <div className="text-sm font-medium text-gray-900">
                       {client.name}
                     </div>
+                    {client.company_name && (
+                      <div className="text-sm text-blue-600 font-medium">
+                        {client.company_name}
+                      </div>
+                    )}
                     {client.address && (
                       <div className="text-sm text-gray-500">
                         {client.address}

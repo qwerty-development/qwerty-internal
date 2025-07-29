@@ -11,6 +11,8 @@ export default function NewClientPage() {
     contact_phone: "",
     address: "",
     notes: "",
+    company_name: "",
+    company_email: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +64,8 @@ export default function NewClientPage() {
         phone: form.contact_phone || undefined,
         address: form.address || undefined,
         notes: form.notes || undefined,
+        company_name: form.company_name || undefined,
+        company_email: form.company_email || undefined,
       });
 
       if (result.success) {
@@ -74,6 +78,8 @@ export default function NewClientPage() {
           contact_phone: "",
           address: "",
           notes: "",
+          company_name: "",
+          company_email: "",
         });
       } else {
         setError(result.error || "Failed to create client");
@@ -143,6 +149,34 @@ export default function NewClientPage() {
             onChange={handleChange}
             placeholder="Email address"
             required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-qwerty mb-2">
+            Company Name
+          </label>
+          <input
+            name="company_name"
+            type="text"
+            className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400"
+            value={form.company_name}
+            onChange={handleChange}
+            placeholder="Company name (optional)"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-qwerty mb-2">
+            Company Email
+          </label>
+          <input
+            name="company_email"
+            type="email"
+            className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-qwerty focus:bg-gray-50 focus:outline-none transition-all duration-300 placeholder-gray-400"
+            value={form.company_email}
+            onChange={handleChange}
+            placeholder="Company email (optional)"
           />
         </div>
         <div>

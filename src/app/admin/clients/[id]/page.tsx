@@ -277,6 +277,22 @@ export default function ClientDetailPage() {
                 {client.address || "Not provided"}
               </p>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Company Name
+              </label>
+              <p className="text-sm text-gray-900 mt-1">
+                {client.company_name || "Not provided"}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Company Email
+              </label>
+              <p className="text-sm text-gray-900 mt-1">
+                {client.company_email || "Not provided"}
+              </p>
+            </div>
           </div>
 
           {/* Password Management Section */}

@@ -21,6 +21,8 @@ export default function EditClientPage() {
     contact_phone: "",
     address: "",
     contact_email: "",
+    company_name: "",
+    company_email: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +51,8 @@ export default function EditClientPage() {
           contact_phone: clientData.contact_phone || "",
           address: clientData.address || "",
           contact_email: clientData.contact_email || "",
+          company_name: clientData.company_name || "",
+          company_email: clientData.company_email || "",
         });
       } catch (err) {
         setError("Failed to load client data");
@@ -95,6 +99,8 @@ export default function EditClientPage() {
         contact_phone: formData.contact_phone.trim() || undefined,
         address: formData.address.trim() || undefined,
         contact_email: formData.contact_email.trim() || undefined,
+        company_name: formData.company_name.trim() || undefined,
+        company_email: formData.company_email.trim() || undefined,
       });
 
       if (result.success) {
@@ -254,6 +260,42 @@ export default function EditClientPage() {
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter address"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="company_name"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Company Name
+            </label>
+            <input
+              type="text"
+              id="company_name"
+              name="company_name"
+              value={formData.company_name}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter company name (optional)"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="company_email"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Company Email
+            </label>
+            <input
+              type="email"
+              id="company_email"
+              name="company_email"
+              value={formData.company_email}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter company email (optional)"
             />
           </div>
 
