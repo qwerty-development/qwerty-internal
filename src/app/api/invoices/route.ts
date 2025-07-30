@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     // Verify client exists
     const { data: client, error: clientError } = await supabase
       .from("clients")
-      .select("id, name, regular_balance")
+      .select("id, company_name, regular_balance")
       .eq("id", invoiceData.client_id)
       .single();
 
