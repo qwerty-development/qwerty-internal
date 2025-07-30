@@ -844,14 +844,18 @@ async function generateInvoicePDFWithBranding(
                         <td colspan="4" style="text-align: right;">Subtotal:</td>
                         <td class="item-price">${formatCurrency(invoice.total_amount)}</td>
                     </tr>
+                    ${(invoice.discount && invoice.discount > 0) ? `
                     <tr style="background-color: #f8f9fa;">
                         <td colspan="4" style="text-align: right;">Discount:</td>
-                        <td class="item-price">-${formatCurrency(invoice.discount || 0)}</td>
+                        <td class="item-price">-${formatCurrency(invoice.discount)}</td>
                     </tr>
+                    ` : ''}
+                    ${(invoice.tax && invoice.tax > 0) ? `
                     <tr style="background-color: #f8f9fa;">
                         <td colspan="4" style="text-align: right;">Tax:</td>
-                        <td class="item-price">${formatCurrency(invoice.tax || 0)}</td>
+                        <td class="item-price">${formatCurrency(invoice.tax)}</td>
                     </tr>
+                    ` : ''}
                     <tr class="total-row">
                         <td colspan="4" style="text-align: right; font-weight: bold; font-size: 18px;">TOTAL:</td>
                         <td class="item-price" style="font-weight: bold; font-size: 18px;">${formatCurrency(invoice.total_amount)}</td>
@@ -859,7 +863,7 @@ async function generateInvoicePDFWithBranding(
                 </tfoot>
             </table>
 
-            <br><br><br><br><br><br><br><br><br><br>
+            <br><br><br><br><br><br><br><br><br><br><br><br>
             
             <!-- PAGE BREAK: Second page starts here -->
             <div class="second-page">
@@ -897,7 +901,7 @@ async function generateInvoicePDFWithBranding(
                 <!-- Conditions/Instructions -->
                 <div class="section-title">Conditions/Instructions</div>
                 <div class="conditions-section">
-                    Please include the invoice number with your payment. We accept bank transfers, OMT and Whish and major credit cards.
+                    Please include the invoice number with your payment. We accept bank transfers, OMT and Whish.
                 </div>
 
                 <div class="section-separator"></div>
