@@ -238,12 +238,22 @@ async function generateInvoicePDFWithBranding(
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            /* Improve text rendering */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            font-kerning: auto;
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            /* Use system fonts for better rendering */
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', Arial, sans-serif;
             background-color: #f5f5f5;
             color: #333;
+            /* Improve text sharpness */
+            font-variant-ligatures: none;
+            text-rendering: geometricPrecision;
+            -webkit-text-stroke: 0.01em transparent; /* Micro-stroke for sharper text */
         }
 
         .invoice-container {
@@ -251,6 +261,12 @@ async function generateInvoicePDFWithBranding(
             background: white;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             overflow: hidden;
+            /* Remove any CSS transforms that can cause blurriness */
+        }
+
+        .invoice-container * {
+            transform: none !important;
+            will-change: auto !important;
         }
 
         /* Header Styles */
@@ -261,6 +277,10 @@ async function generateInvoicePDFWithBranding(
             display: flex;
             justify-content: space-between;
             align-items: center;
+            /* Ensure pixel-perfect positioning */
+            position: relative;
+            top: 0;
+            left: 0;
         }
 
         .header-left {
@@ -313,13 +333,19 @@ async function generateInvoicePDFWithBranding(
         }
 
         .business-info {
-            font-size: 16px;
+            /* For very small text, use slightly larger sizes */
+            font-size: 12px; /* Instead of 11px */
             opacity: 0.9;
+            line-height: 1.3;
         }
 
         /* Content Styles */
         .invoice-content {
             padding: 40px;
+            /* Ensure pixel-perfect positioning */
+            position: relative;
+            top: 0;
+            left: 0;
         }
 
         .invoice-details-section {
@@ -353,11 +379,17 @@ async function generateInvoicePDFWithBranding(
             color: #666;
             min-width: 140px;
             margin-right: 10px;
+            /* For very small text, use slightly larger sizes */
+            font-size: 12px; /* Instead of 11px */
+            line-height: 1.3;
         }
 
         .value {
             color: #333;
             flex: 1;
+            /* For very small text, use slightly larger sizes */
+            font-size: 12px; /* Instead of 11px */
+            line-height: 1.3;
         }
 
         .status-badge {
@@ -399,7 +431,8 @@ async function generateInvoicePDFWithBranding(
         /* Items Table */
         .items-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             margin-bottom: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             border-radius: 8px;
@@ -415,7 +448,15 @@ async function generateInvoicePDFWithBranding(
         .items-table td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #eee;
+            border: 1px solid #ddd;
+            border-top: none;
+            /* For tables and important text, use slightly heavier font weights */
+            font-weight: 500; /* Instead of normal (400) */
+            letter-spacing: 0.01em; /* Tiny spacing for clarity */
+        }
+
+        .items-table thead th {
+            border-top: 1px solid #ddd;
         }
 
         .items-table th {
@@ -443,7 +484,8 @@ async function generateInvoicePDFWithBranding(
 
         .item-description {
             color: #666;
-            font-size: 13px;
+            /* For very small text, use slightly larger sizes */
+            font-size: 12px; /* Instead of 11px */
             line-height: 1.3;
         }
 
@@ -499,6 +541,10 @@ async function generateInvoicePDFWithBranding(
             border-radius: 12px;
             margin-bottom: 30px;
             box-shadow: 0 4px 15px rgba(1, 48, 63, 0.3);
+            /* Ensure pixel-perfect positioning */
+            position: relative;
+            top: 0;
+            left: 0;
         }
 
         .payment-summary .section-title {
@@ -549,7 +595,8 @@ async function generateInvoicePDFWithBranding(
         /* Payment History Table */
         .payment-history-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             margin: 20px 0;
             border-radius: 8px;
             overflow: hidden;

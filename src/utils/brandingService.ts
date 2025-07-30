@@ -75,12 +75,25 @@ export function generateBrandingCSS(branding: BrandingSettings): string {
   const fontFamily = branding.font_family || defaultBranding.font_family;
 
   return `
+    * {
+      /* Improve text rendering */
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      font-kerning: auto;
+    }
+    
     body {
-      font-family: ${fontFamily};
+      /* Use system fonts for better rendering */
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', Arial, sans-serif;
       margin: 0;
       padding: 20px;
       color: #333;
       line-height: 1.6;
+      /* Improve text sharpness */
+      font-variant-ligatures: none;
+      text-rendering: geometricPrecision;
+      -webkit-text-stroke: 0.01em transparent; /* Micro-stroke for sharper text */
     }
     .header {
       text-align: center;
