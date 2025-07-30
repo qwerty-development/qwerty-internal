@@ -34,6 +34,7 @@ export async function storePasswordInDatabase(
         expires_at: new Date(
           Date.now() + 30 * 24 * 60 * 60 * 1000
         ).toISOString(), // 30 days
+        hasChangedPass: false, // Set to false when storing initial password
       })
       .select();
 
@@ -137,6 +138,49 @@ export async function cleanupExpiredPasswords(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error("Error in cleanupExpiredPasswords:", error);
+    return false;
+  }
+}
+
+export async function checkPasswordChangeStatus(clientId: string): Promise<boolean | null> {
+  try {
+    const supabase = createServiceClient();
+
+    const { data, error } = await supabase
+      .from("password_storage")
+      .select("hasChangedPass")
+      .eq("client_id", clientId)
+      .single();
+
+    if (error) {
+      console.error("Error checking password change status:", error);
+      return null;
+    }
+
+    return data?.hasChangedPass || false;
+  } catch (error) {
+    console.error("Error in checkPasswordChangeStatus:", error);
+    return null;
+  }
+}
+
+export async function updatePasswordChangeStatus(clientId: string): Promise<boolean> {
+  try {
+    const supabase = createServiceClient();
+
+    const { error } = await supabase
+      .from("password_storage")
+      .update({ hasChangedPass: true })
+      .eq("client_id", clientId);
+
+    if (error) {
+      console.error("Error updating password change status:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in updatePasswordChangeStatus:", error);
     return false;
   }
 }

@@ -183,6 +183,7 @@ The system manages clients, branding, quotations, invoices, receipts, subscripti
 - `password_hash` (text, NOT NULL) - Hashed version of the password.
 - `created_at` (timestamp with time zone, DEFAULT now()) - Record creation timestamp.
 - `expires_at` (timestamp with time zone, DEFAULT now() + 30 days) - When the password expires.
+- `hasChangedPass` (boolean, NOT NULL, DEFAULT false) - Whether the client has changed the password.
 
 **Constraints**:
 

@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import PasswordChangeModal from "@/components/PasswordChangeModal";
+import ForgotPasswordModal from "@/components/ForgotPasswordModal";
 
 export default function SignInPage() {
   const supabase = createClient();
@@ -10,6 +12,9 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +41,51 @@ export default function SignInPage() {
       setLoading(false);
       return;
     }
+    
+    setUserRole(user.role);
+    
+    // If user is a client, check if they need to change their password
+    if (user.role === "client") {
+      try {
+        // Get client data
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("user_id", userId)
+          .single();
+
+        if (clientError || !clientData) {
+          setError("Could not fetch client data");
+          setLoading(false);
+          return;
+        }
+
+        // Check password change status
+        const response = await fetch('/api/debug/password-storage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ clientId: clientData.id }),
+        });
+
+        if (response.ok) {
+          const passwordData = await response.json();
+          
+          // If hasChangedPass is false, show the password change modal
+          if (passwordData.data && !passwordData.data.hasChangedPass) {
+            setShowPasswordModal(true);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error checking password status:', err);
+        // Continue with normal flow if there's an error
+      }
+    }
+    
+    // Normal redirect flow
     if (user.role === "admin") {
       router.replace("/admin");
     } else {
@@ -44,39 +94,73 @@ export default function SignInPage() {
     setLoading(false);
   };
 
+  const handlePasswordChangeSuccess = () => {
+    setShowPasswordModal(false);
+    // Redirect based on role
+    if (userRole === "admin") {
+      router.replace("/admin");
+    } else {
+      router.replace("/portal");
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      <form onSubmit={handleSignIn} className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md space-y-6">
-        <h1 className="text-2xl font-bold text-center">Sign In</h1>
-        {error && <div className="text-red-500 text-center">{error}</div>}
-        <div>
-          <label className="block mb-1 font-semibold">Email</label>
-          <input
-            type="email"
-            className="w-full px-4 py-2 border rounded-lg"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block mb-1 font-semibold">Password</label>
-          <input
-            type="password"
-            className="w-full px-4 py-2 border rounded-lg"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-          disabled={loading}
-        >
-          {loading ? "Signing in..." : "Sign In"}
-        </button>
-      </form>
-    </div>
+    <>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+        <form onSubmit={handleSignIn} className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md space-y-6">
+          <h1 className="text-2xl font-bold text-center">Sign In</h1>
+          {error && <div className="text-red-500 text-center">{error}</div>}
+          <div>
+            <label className="block mb-1 font-semibold">Email</label>
+            <input
+              type="email"
+              className="w-full px-4 py-2 border rounded-lg"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block mb-1 font-semibold">Password</label>
+            <input
+              type="password"
+              className="w-full px-4 py-2 border rounded-lg"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+            disabled={loading}
+          >
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
+          
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setShowForgotPasswordModal(true)}
+              className="text-blue-600 hover:text-blue-800 text-sm underline"
+              disabled={loading}
+            >
+              Forgot your password?
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <PasswordChangeModal 
+        isOpen={showPasswordModal}
+        onClose={() => {}} // Prevent closing - user must change password
+        onSuccess={handlePasswordChangeSuccess}
+      />
+      
+      <ForgotPasswordModal 
+        isOpen={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+      />
+    </>
   );
 } 
