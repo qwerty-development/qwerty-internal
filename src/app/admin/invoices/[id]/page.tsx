@@ -6,6 +6,25 @@ import { createClient } from "@/utils/supabase/client";
 import { createPayment } from "@/utils/paymentCreation";
 import { generateInvoicePDF } from "@/utils/pdfGenerator";
 import Link from "next/link";
+import {
+  ArrowLeft,
+  FileText,
+  Download,
+  Mail,
+  User,
+  Calendar,
+  DollarSign,
+  Building2,
+  Receipt,
+  CreditCard,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  TrendingUp,
+  Eye,
+  Plus,
+  type LucideIcon,
+} from "lucide-react";
 
 export default function InvoiceDetailPage() {
   const params = useParams();
@@ -147,12 +166,113 @@ export default function InvoiceDetailPage() {
     }
   }, [invoiceId, supabase]);
 
+  // Get invoice status badge
+  const getInvoiceStatusBadge = (status: string) => {
+    const statusConfig = {
+      "Paid": {
+        bg: "bg-green-100",
+        text: "text-green-800",
+        icon: CheckCircle,
+        label: "Paid"
+      },
+      "Partially Paid": {
+        bg: "bg-yellow-100",
+        text: "text-yellow-800",
+        icon: Clock,
+        label: "Partially Paid"
+      },
+      "Unpaid": {
+        bg: "bg-red-100",
+        text: "text-red-800",
+        icon: AlertCircle,
+        label: "Unpaid"
+      }
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig["Unpaid"];
+    const IconComponent = config.icon;
+
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+        <IconComponent className="w-3 h-3 mr-1" />
+        {config.label}
+      </span>
+    );
+  };
+
+  // Get payment method badge
+  const getPaymentMethodBadge = (method: string) => {
+    const methodConfig = {
+      "Bank Transfer": {
+        bg: "bg-blue-100",
+        text: "text-blue-800",
+        icon: CreditCard,
+        label: "Bank Transfer"
+      },
+      "Cash": {
+        bg: "bg-green-100",
+        text: "text-green-800",
+        icon: DollarSign,
+        label: "Cash"
+      },
+      "Credit Card": {
+        bg: "bg-purple-100",
+        text: "text-purple-800",
+        icon: CreditCard,
+        label: "Credit Card"
+      },
+      "Check": {
+        bg: "bg-orange-100",
+        text: "text-orange-800",
+        icon: FileText,
+        label: "Check"
+      },
+      "PayPal": {
+        bg: "bg-indigo-100",
+        text: "text-indigo-800",
+        icon: CreditCard,
+        label: "PayPal"
+      },
+      "Other": {
+        bg: "bg-gray-100",
+        text: "text-gray-800",
+        icon: CreditCard,
+        label: "Other"
+      }
+    };
+
+    const config = methodConfig[method as keyof typeof methodConfig] || methodConfig["Other"];
+    const IconComponent = config.icon;
+
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+        <IconComponent className="w-3 h-3 mr-1" />
+        {config.label}
+      </span>
+    );
+  };
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Loading invoice details...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-gray-600 mt-4">Loading invoice details...</p>
+          </div>
         </div>
       </div>
     );
@@ -160,30 +280,35 @@ export default function InvoiceDetailPage() {
 
   if (error || !invoice) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Invoice Not Found
-          </h1>
-          <p className="text-gray-600 mb-6">
-            {error || "The invoice you're looking for doesn't exist."}
-          </p>
-          {error && error.includes("Invoice not found:") && (
-            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-left">
-              <p className="text-yellow-800 text-sm">
-                <strong>Debug Info:</strong> Invoice ID: {invoiceId}
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-12">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+              <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+              <h1 className="text-xl font-bold text-gray-900 mb-2">
+                Invoice Not Found
+              </h1>
+              <p className="text-gray-600 mb-6">
+                {error || "The invoice you're looking for doesn't exist."}
               </p>
-              <p className="text-yellow-800 text-sm mt-1">
-                <strong>Error:</strong> {error}
-              </p>
+              {error && error.includes("Invoice not found:") && (
+                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-left">
+                  <p className="text-yellow-800 text-sm">
+                    <strong>Debug Info:</strong> Invoice ID: {invoiceId}
+                  </p>
+                  <p className="text-yellow-800 text-sm mt-1">
+                    <strong>Error:</strong> {error}
+                  </p>
+                </div>
+              )}
+              <Link
+                href="/admin/invoices"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Back to Invoices
+              </Link>
             </div>
-          )}
-          <Link
-            href="/admin/invoices"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Back to Invoices
-          </Link>
+          </div>
         </div>
       </div>
     );
@@ -195,9 +320,7 @@ export default function InvoiceDetailPage() {
     if (!paymentForm.amount || parseFloat(paymentForm.amount) <= 0) {
       newErrors.amount = "Please enter a valid amount greater than 0";
     } else if (parseFloat(paymentForm.amount) > invoice.balance_due) {
-      newErrors.amount = `Amount cannot exceed balance due ($${invoice.balance_due.toFixed(
-        2
-      )})`;
+      newErrors.amount = `Amount cannot exceed balance due (${formatCurrency(invoice.balance_due)})`;
     }
 
     if (!paymentForm.paymentDate) {
@@ -350,452 +473,583 @@ export default function InvoiceDetailPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Back Navigation */}
-      <div className="mb-6">
-        <Link
-          href="/admin/invoices"
-          className="text-blue-600 hover:text-blue-800 flex items-center gap-2 text-sm font-medium"
-        >
-          ← Back to Invoices
-        </Link>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back Navigation */}
+        <div className="mb-6">
+          <Link
+            href="/admin/invoices"
+            className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Invoices
+          </Link>
+        </div>
 
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {invoice.invoice_number}
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Invoice Details & Payment Management
-            </p>
-          </div>
-          <div className="flex space-x-3">
-            <button
-              onClick={handleGeneratePDF}
-              disabled={isGeneratingPDF}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md disabled:opacity-50"
-            >
-              {isGeneratingPDF ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Generating...
-                </>
-              ) : (
-                <>
-                  📄 Generate PDF
-                </>
-              )}
-            </button>
-            {client?.company_email && (
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {invoice.invoice_number}
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Invoice Details & Payment Management
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={handleSendEmail}
-                disabled={isSendingEmail}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md disabled:opacity-50"
+                onClick={handleGeneratePDF}
+                disabled={isGeneratingPDF}
+                className="inline-flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-medium transition-colors"
               >
-                {isSendingEmail ? (
+                {isGeneratingPDF ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Sending...
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Generating...
                   </>
                 ) : (
                   <>
-                    📧 Send Email
+                    <Download className="w-4 h-4 mr-2" />
+                    Generate PDF
                   </>
                 )}
               </button>
-            )}
-            {client && (
-              <Link
-                href={`/admin/clients/${client.id}`}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
-              >
-                👤 View Client
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Email Notification */}
-      {emailNotification.type && (
-        <div className={`mb-6 p-4 rounded-lg border ${
-          emailNotification.type === 'success' 
-            ? 'bg-green-50 border-green-200 text-green-800' 
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
-          <div className="flex items-center justify-between">
-            <span className="font-medium">{emailNotification.message}</span>
-            <button
-              onClick={() => setEmailNotification({ type: null, message: '' })}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Invoice Information */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-md border p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Invoice Information
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Invoice Number
-              </label>
-              <p className="text-sm text-gray-900 mt-1">
-                {invoice.invoice_number}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Client
-              </label>
-              <p className="text-sm text-gray-900 mt-1">
-                {client ? client.company_name : "Client not found"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Issue Date
-              </label>
-              <p className="text-sm text-gray-900 mt-1">
-                {new Date(invoice.issue_date).toLocaleDateString()}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Due Date
-              </label>
-              <p className="text-sm text-gray-900 mt-1">
-                {new Date(invoice.due_date).toLocaleDateString()}
-              </p>
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-500">
-                Description
-              </label>
-              <p className="text-sm text-gray-900 mt-1">
-                {invoice.description}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md border p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Financial Summary
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Total Amount
-              </label>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                ${invoice.total_amount?.toFixed(2) || "0.00"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Amount Paid
-              </label>
-              <p className="text-2xl font-bold text-green-600 mt-1">
-                ${invoice.amount_paid?.toFixed(2) || "0.00"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Balance Due
-              </label>
-              <p
-                className={`text-2xl font-bold mt-1 ${
-                  invoice.balance_due > 0 ? "text-red-600" : "text-green-600"
-                }`}
-              >
-                ${invoice.balance_due?.toFixed(2) || "0.00"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Status
-              </label>
-              <span
-                className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full mt-1 ${
-                  invoice.status === "Paid"
-                    ? "bg-green-100 text-green-800"
-                    : invoice.status === "Partially Paid"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {invoice.status}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Invoice Items Section */}
-      {invoice?.uses_items && items.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md border mb-8">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Invoice Items
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    #
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Item
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {item.position}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.title}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.description || (
-                        <span className="text-gray-400 italic">
-                          No description
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
-                      ${item.price.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-gray-50">
-                <tr>
-                  <td
-                    colSpan={3}
-                    className="px-6 py-4 text-right text-sm font-semibold text-gray-900"
-                  >
-                    Total:
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
-                    $
-                    {items
-                      .reduce((sum, item) => sum + item.price, 0)
-                      .toFixed(2)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Add Payment Section */}
-      {invoice.balance_due > 0 && (
-        <div className="bg-white rounded-lg shadow-md border mb-8" id="payment">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold text-gray-900">Add Payment</h2>
-          </div>
-          <div className="p-6">
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600">{error}</p>
-              </div>
-            )}
-            {paymentSuccess && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-green-600">
-                  Payment added successfully! Refreshing page...
-                </p>
-              </div>
-            )}
-            <form onSubmit={handlePaymentSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label
-                    htmlFor="amount"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Amount *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                      $
-                    </span>
-                    <input
-                      type="number"
-                      id="amount"
-                      name="amount"
-                      value={paymentForm.amount}
-                      onChange={handlePaymentChange}
-                      step="0.01"
-                      min="0"
-                      max={invoice.balance_due}
-                      className={`w-full pl-8 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        paymentErrors.amount
-                          ? "border-red-300"
-                          : "border-gray-300"
-                      }`}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  {paymentErrors.amount && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {paymentErrors.amount}
-                    </p>
-                  )}
-                  <p className="mt-1 text-xs text-gray-500">
-                    Maximum: ${invoice.balance_due.toFixed(2)}
-                  </p>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="paymentDate"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Payment Date *
-                  </label>
-                  <input
-                    type="date"
-                    id="paymentDate"
-                    name="paymentDate"
-                    value={paymentForm.paymentDate}
-                    onChange={handlePaymentChange}
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      paymentErrors.paymentDate
-                        ? "border-red-300"
-                        : "border-gray-300"
-                    }`}
-                  />
-                  {paymentErrors.paymentDate && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {paymentErrors.paymentDate}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="paymentMethod"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Payment Method *
-                  </label>
-                  <select
-                    id="paymentMethod"
-                    name="paymentMethod"
-                    value={paymentForm.paymentMethod}
-                    onChange={handlePaymentChange}
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      paymentErrors.paymentMethod
-                        ? "border-red-300"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Credit Card">Credit Card</option>
-                    <option value="Check">Check</option>
-                    <option value="PayPal">PayPal</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  {paymentErrors.paymentMethod && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {paymentErrors.paymentMethod}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex justify-end">
+              {client?.company_email && (
                 <button
-                  type="submit"
-                  disabled={isSubmittingPayment}
-                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  onClick={handleSendEmail}
+                  disabled={isSendingEmail}
+                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium transition-colors"
                 >
-                  {isSubmittingPayment ? "Adding Payment..." : "Add Payment"}
+                  {isSendingEmail ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4 mr-2" />
+                      Send Email
+                    </>
+                  )}
                 </button>
-              </div>
-            </form>
+              )}
+              {client && (
+                <Link
+                  href={`/admin/clients/${client.id}`}
+                  className="inline-flex items-center justify-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  View Client
+                </Link>
+              )}
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Receipts Section */}
-      <div className="bg-white rounded-lg shadow-md border">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Payment History
-          </h2>
-        </div>
-
-        {receipts.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Receipt Number
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Payment Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Payment Method
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {receipts.map((receipt) => (
-                  <tr key={receipt.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {receipt.receipt_number}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(receipt.payment_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                      ${receipt.amount.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {receipt.payment_method}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500">
-              No payments have been made for this invoice yet.
-            </p>
+        {/* Email Notification */}
+        {emailNotification.type && (
+          <div className={`mb-6 p-4 rounded-lg border ${
+            emailNotification.type === 'success' 
+              ? 'bg-green-50 border-green-200 text-green-800' 
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="font-medium">{emailNotification.message}</span>
+              <button
+                onClick={() => setEmailNotification({ type: null, message: '' })}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <DollarSign className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Amount</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {formatCurrency(invoice.total_amount || 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Amount Paid</p>
+                <p className="text-lg font-bold text-green-600">
+                  {formatCurrency(invoice.amount_paid || 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Balance Due</p>
+                <p className={`text-lg font-bold ${invoice.balance_due > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {formatCurrency(invoice.balance_due || 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Receipt className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Payments</p>
+                <p className="text-2xl font-bold text-gray-900">{receipts.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Invoice Information */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+              Invoice Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex items-start">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">
+                      Invoice Number
+                    </label>
+                    <p className="text-sm text-gray-900 mt-1">
+                      {invoice.invoice_number}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                    <Building2 className="w-4 h-4 text-green-600" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">
+                      Client
+                    </label>
+                    <p className="text-sm text-gray-900 mt-1">
+                      {client ? client.company_name : "Client not found"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                    <Calendar className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">
+                      Issue Date
+                    </label>
+                    <p className="text-sm text-gray-900 mt-1">
+                      {formatDate(invoice.issue_date)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start">
+                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                    <Calendar className="w-4 h-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">
+                      Due Date
+                    </label>
+                    <p className="text-sm text-gray-900 mt-1">
+                      {formatDate(invoice.due_date)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                    <FileText className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">
+                      Status
+                    </label>
+                    <div className="mt-1">
+                      {getInvoiceStatusBadge(invoice.status || "Unpaid")}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center mr-3">
+                    <FileText className="w-4 h-4 text-pink-600" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">
+                      Description
+                    </label>
+                    <p className="text-sm text-gray-900 mt-1">
+                      {invoice.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+              Financial Summary
+            </h2>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-500">
+                  Total Amount
+                </label>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {formatCurrency(invoice.total_amount || 0)}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500">
+                  Amount Paid
+                </label>
+                <p className="text-2xl font-bold text-green-600 mt-1">
+                  {formatCurrency(invoice.amount_paid || 0)}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500">
+                  Balance Due
+                </label>
+                <p
+                  className={`text-2xl font-bold mt-1 ${
+                    invoice.balance_due > 0 ? "text-red-600" : "text-green-600"
+                  }`}
+                >
+                  {formatCurrency(invoice.balance_due || 0)}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500">
+                  Status
+                </label>
+                <div className="mt-1">
+                  {getInvoiceStatusBadge(invoice.status || "Unpaid")}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Invoice Items Section */}
+        {invoice?.uses_items && items.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Invoice Items
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      #
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Item
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {items.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {item.position}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.title}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-900">
+                        {item.description || (
+                          <span className="text-gray-400 italic">
+                            No description
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                        {formatCurrency(item.price)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-gray-50">
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-4 py-4 text-right text-sm font-semibold text-gray-900"
+                    >
+                      Total:
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
+                      {formatCurrency(items.reduce((sum, item) => sum + item.price, 0))}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Add Payment Section */}
+        {invoice.balance_due > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8" id="payment">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Add Payment</h2>
+            </div>
+            <div className="p-6">
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600">{error}</p>
+                </div>
+              )}
+              {paymentSuccess && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-600">
+                    Payment added successfully! Refreshing page...
+                  </p>
+                </div>
+              )}
+              <form onSubmit={handlePaymentSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label
+                      htmlFor="amount"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Amount *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
+                        <DollarSign className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="number"
+                        id="amount"
+                        name="amount"
+                        value={paymentForm.amount}
+                        onChange={handlePaymentChange}
+                        step="0.01"
+                        min="0"
+                        max={invoice.balance_due}
+                        className={`w-full pl-10 pr-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          paymentErrors.amount
+                            ? "border-red-300"
+                            : "border-gray-300"
+                        }`}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    {paymentErrors.amount && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {paymentErrors.amount}
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs text-gray-500">
+                      Maximum: {formatCurrency(invoice.balance_due)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="paymentDate"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Payment Date *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
+                        <Calendar className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="date"
+                        id="paymentDate"
+                        name="paymentDate"
+                        value={paymentForm.paymentDate}
+                        onChange={handlePaymentChange}
+                        className={`w-full pl-10 pr-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          paymentErrors.paymentDate
+                            ? "border-red-300"
+                            : "border-gray-300"
+                        }`}
+                      />
+                    </div>
+                    {paymentErrors.paymentDate && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {paymentErrors.paymentDate}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="paymentMethod"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Payment Method *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
+                        <CreditCard className="w-4 h-4" />
+                      </span>
+                      <select
+                        id="paymentMethod"
+                        name="paymentMethod"
+                        value={paymentForm.paymentMethod}
+                        onChange={handlePaymentChange}
+                        className={`w-full pl-10 pr-8 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white ${
+                          paymentErrors.paymentMethod
+                            ? "border-red-300"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Credit Card">Credit Card</option>
+                        <option value="Check">Check</option>
+                        <option value="PayPal">PayPal</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    {paymentErrors.paymentMethod && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {paymentErrors.paymentMethod}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSubmittingPayment}
+                    className="inline-flex items-center justify-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isSubmittingPayment ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Adding Payment...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Payment
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Receipts Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Payment History
+            </h2>
+          </div>
+
+          {receipts.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Receipt Number
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Payment Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Payment Method
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {receipts.map((receipt) => (
+                    <tr key={receipt.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <div className="flex items-center">
+                          <Receipt className="w-4 h-4 text-gray-400 mr-2" />
+                          {receipt.receipt_number}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex items-center">
+                          <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                          {formatDate(receipt.payment_date)}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                        <div className="flex items-center">
+                          <DollarSign className="w-4 h-4 mr-2" />
+                          {formatCurrency(receipt.amount)}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {getPaymentMethodBadge(receipt.payment_method)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-gray-500 mb-4">
+                <Receipt className="mx-auto h-12 w-12" />
+              </div>
+              <p className="text-gray-500">
+                No payments have been made for this invoice yet.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
