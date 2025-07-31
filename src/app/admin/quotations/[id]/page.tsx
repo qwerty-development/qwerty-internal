@@ -468,13 +468,22 @@ export default function QuotationDetailPage() {
               {isGeneratingPDF ? "Generating..." : "Generate PDF"}
             </button>
             {quotation.status === "Draft" && (
-              <button
-                onClick={() => updateStatus("Sent")}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Send className="w-4 h-4" />
-                Send Quotation
-              </button>
+              <>
+                <button
+                  onClick={() => updateStatus("Approved")}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Approve
+                </button>
+                <button
+                  onClick={() => updateStatus("Rejected")}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Reject
+                </button>
+              </>
             )}
           </div>
         </div>

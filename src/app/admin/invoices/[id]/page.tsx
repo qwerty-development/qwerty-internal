@@ -32,6 +32,10 @@ export default function InvoiceDetailPage() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailNotification, setEmailNotification] = useState<{
+    type: 'success' | 'error' | null;
+    message: string;
+  }>({ type: null, message: '' });
 
   // Fetch invoice, client, receipts, and items data
   useEffect(() => {
@@ -291,11 +295,16 @@ export default function InvoiceDetailPage() {
   // Send email with PDF
   const handleSendEmail = async () => {
     if (!client?.company_email) {
-      alert("Client does not have an email address.");
+      setEmailNotification({
+        type: 'error',
+        message: 'Client does not have an email address configured.'
+      });
       return;
     }
 
     setIsSendingEmail(true);
+    setEmailNotification({ type: null, message: '' });
+    
     try {
       const response = await fetch(`/api/invoices/${invoiceId}/send-email`, {
         method: "POST",
@@ -307,13 +316,22 @@ export default function InvoiceDetailPage() {
       const result = await response.json();
 
       if (result.success) {
-        alert(`Email sent successfully to ${client.company_email}!`);
+        setEmailNotification({
+          type: 'success',
+          message: `✅ Email sent successfully to ${client.company_email}!`
+        });
       } else {
-        alert(`Failed to send email: ${result.error}`);
+        setEmailNotification({
+          type: 'error',
+          message: `❌ Failed to send email: ${result.error}`
+        });
       }
     } catch (error) {
       console.error("Error sending email:", error);
-      alert("Failed to send email. Please try again.");
+      setEmailNotification({
+        type: 'error',
+        message: '❌ Failed to send email. Please check your connection and try again.'
+      });
     } finally {
       setIsSendingEmail(false);
     }
@@ -358,30 +376,67 @@ export default function InvoiceDetailPage() {
             <button
               onClick={handleGeneratePDF}
               disabled={isGeneratingPDF}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md disabled:opacity-50"
             >
-              📄 {isGeneratingPDF ? "Generating..." : "Generate PDF"}
+              {isGeneratingPDF ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  📄 Generate PDF
+                </>
+              )}
             </button>
             {client?.company_email && (
               <button
                 onClick={handleSendEmail}
                 disabled={isSendingEmail}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md disabled:opacity-50"
               >
-                📧 {isSendingEmail ? "Sending..." : "Send Email"}
+                {isSendingEmail ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    📧 Send Email
+                  </>
+                )}
               </button>
             )}
             {client && (
               <Link
                 href={`/admin/clients/${client.id}`}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
               >
-                View Client
+                👤 View Client
               </Link>
             )}
           </div>
         </div>
       </div>
+
+      {/* Email Notification */}
+      {emailNotification.type && (
+        <div className={`mb-6 p-4 rounded-lg border ${
+          emailNotification.type === 'success' 
+            ? 'bg-green-50 border-green-200 text-green-800' 
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span className="font-medium">{emailNotification.message}</span>
+            <button
+              onClick={() => setEmailNotification({ type: null, message: '' })}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Invoice Information */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

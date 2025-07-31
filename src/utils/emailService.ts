@@ -27,8 +27,8 @@ const createTransporter = () => {
 // Email templates
 export const emailTemplates = {
   invoice: {
-    subject: (invoiceNumber: string) => `Invoice ${invoiceNumber} from QWERTY`,
-    html: (invoiceNumber: string, clientName: string, totalAmount: number) => `
+    subject: (invoiceNumber: string, companyName: string) => `Invoice ${invoiceNumber} from ${companyName}`,
+    html: (invoiceNumber: string, clientName: string, totalAmount: number, companyName: string, companyEmail: string) => `
       <!DOCTYPE html>
       <html>
       <head>
@@ -45,7 +45,7 @@ export const emailTemplates = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>QWERTY</h1>
+            <h1>${companyName}</h1>
           </div>
           <div class="content">
             <h2>Invoice ${invoiceNumber}</h2>
@@ -55,10 +55,11 @@ export const emailTemplates = {
     )}</span>.</p>
             <p>If you have any questions regarding this invoice, please don't hesitate to contact us.</p>
             <p>Thank you for your business!</p>
-            <p>Best regards,<br>The QWERTY Team</p>
+            <p>Best regards,<br>The ${companyName} Team</p>
           </div>
           <div class="footer">
             <p>This is an automated message. Please do not reply to this email.</p>
+            <p>Contact: ${companyEmail}</p>
           </div>
         </div>
       </body>
@@ -66,8 +67,8 @@ export const emailTemplates = {
     `,
   },
   receipt: {
-    subject: (receiptNumber: string) => `Receipt ${receiptNumber} from QWERTY`,
-    html: (receiptNumber: string, clientName: string, amount: number) => `
+    subject: (receiptNumber: string, companyName: string) => `Receipt ${receiptNumber} from ${companyName}`,
+    html: (receiptNumber: string, clientName: string, amount: number, companyName: string, companyEmail: string) => `
       <!DOCTYPE html>
       <html>
       <head>
@@ -84,7 +85,7 @@ export const emailTemplates = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>QWERTY</h1>
+            <h1>${companyName}</h1>
           </div>
           <div class="content">
             <h2>Receipt ${receiptNumber}</h2>
@@ -93,10 +94,11 @@ export const emailTemplates = {
       2
     )}</span>.</p>
             <p>We appreciate your business and look forward to serving you again.</p>
-            <p>Best regards,<br>The QWERTY Team</p>
+            <p>Best regards,<br>The ${companyName} Team</p>
           </div>
           <div class="footer">
             <p>This is an automated message. Please do not reply to this email.</p>
+            <p>Contact: ${companyEmail}</p>
           </div>
         </div>
       </body>
@@ -130,8 +132,8 @@ export async function sendInvoiceEmail(
     const mailOptions = {
       from: `"${branding.company_name}" <${emailConfig.auth.user}>`,
       to: toEmail,
-      subject: emailTemplates.invoice.subject(invoiceNumber),
-      html: emailTemplates.invoice.html(invoiceNumber, clientName, totalAmount),
+      subject: emailTemplates.invoice.subject(invoiceNumber, branding.company_name),
+      html: emailTemplates.invoice.html(invoiceNumber, clientName, totalAmount, branding.company_name, branding.company_email),
       attachments: [
         {
           filename: `invoice-${invoiceNumber}.pdf`,
@@ -175,8 +177,8 @@ export async function sendReceiptEmail(
     const mailOptions = {
       from: `"${branding.company_name}" <${emailConfig.auth.user}>`,
       to: toEmail,
-      subject: emailTemplates.receipt.subject(receiptNumber),
-      html: emailTemplates.receipt.html(receiptNumber, clientName, amount),
+      subject: emailTemplates.receipt.subject(receiptNumber, branding.company_name),
+      html: emailTemplates.receipt.html(receiptNumber, clientName, amount, branding.company_name, branding.company_email),
       attachments: [
         {
           filename: `receipt-${receiptNumber}.pdf`,
