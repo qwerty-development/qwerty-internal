@@ -5,7 +5,16 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { generateReceiptPDF } from "@/utils/pdfGenerator";
 import Link from "next/link";
-import { ArrowLeft, Download, User, FileText, Calendar, DollarSign, CreditCard, Eye } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  User,
+  FileText,
+  Calendar,
+  DollarSign,
+  CreditCard,
+  Eye,
+} from "lucide-react";
 
 export default function ReceiptDetailPage() {
   const params = useParams();
@@ -19,6 +28,7 @@ export default function ReceiptDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Fetch receipt details with related data
   useEffect(() => {
@@ -39,7 +49,8 @@ export default function ReceiptDetailPage() {
         // Fetch receipt data with client and invoice information
         const { data: receiptData, error: receiptError } = await supabase
           .from("receipts")
-          .select(`
+          .select(
+            `
             *,
             clients (
               id,
@@ -59,7 +70,8 @@ export default function ReceiptDetailPage() {
               due_date,
               description
             )
-          `)
+          `
+          )
           .eq("id", receiptId)
           .single();
 
@@ -80,7 +92,6 @@ export default function ReceiptDetailPage() {
         if (receiptData.invoices) {
           setInvoice(receiptData.invoices);
         }
-
       } catch (err) {
         console.error("Unexpected error:", err);
         setError("Failed to load receipt data");
@@ -105,6 +116,37 @@ export default function ReceiptDetailPage() {
       alert("Failed to generate PDF. Please try again.");
     } finally {
       setIsGeneratingPDF(false);
+    }
+  };
+
+  // Send email with PDF
+  const handleSendEmail = async () => {
+    if (!client?.company_email) {
+      alert("Client does not have an email address.");
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      const response = await fetch(`/api/receipts/${receiptId}/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`Email sent successfully to ${client.company_email}!`);
+      } else {
+        alert(`Failed to send email: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      alert("Failed to send email. Please try again.");
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -210,10 +252,19 @@ export default function ReceiptDetailPage() {
               <Download className="w-4 h-4" />
               {isGeneratingPDF ? "Generating..." : "Generate PDF"}
             </button>
+            {client?.company_email && (
+              <button
+                onClick={handleSendEmail}
+                disabled={isSendingEmail}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              >
+                📧 {isSendingEmail ? "Sending..." : "Send Email"}
+              </button>
+            )}
             {client && (
               <Link
                 href={`/admin/clients/${client.id}`}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
               >
                 <User className="w-4 h-4" />
                 View Client
@@ -260,7 +311,11 @@ export default function ReceiptDetailPage() {
                 Payment Method
               </label>
               <p className="text-sm text-gray-900 mt-1">
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(receipt.payment_method)}`}>
+                <span
+                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(
+                    receipt.payment_method
+                  )}`}
+                >
                   {receipt.payment_method}
                 </span>
               </p>
@@ -303,7 +358,11 @@ export default function ReceiptDetailPage() {
               </label>
               <div className="flex items-center mt-1">
                 <CreditCard className="w-4 h-4 text-gray-400 mr-2" />
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(receipt.payment_method)}`}>
+                <span
+                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(
+                    receipt.payment_method
+                  )}`}
+                >
                   {receipt.payment_method}
                 </span>
               </div>
@@ -355,7 +414,7 @@ export default function ReceiptDetailPage() {
                   Contact Email
                 </label>
                 <p className="text-sm text-gray-900 mt-1">
-                                      {client.company_email || "Not provided"}
+                  {client.company_email || "Not provided"}
                 </p>
               </div>
               <div>
@@ -431,7 +490,7 @@ export default function ReceiptDetailPage() {
                 </span>
               </div>
             </div>
-            
+
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-500">
@@ -453,9 +512,11 @@ export default function ReceiptDetailPage() {
                 <label className="block text-sm font-medium text-gray-500">
                   Balance Due
                 </label>
-                <p className={`text-lg font-bold mt-1 ${
-                  invoice.balance_due > 0 ? "text-red-600" : "text-green-600"
-                }`}>
+                <p
+                  className={`text-lg font-bold mt-1 ${
+                    invoice.balance_due > 0 ? "text-red-600" : "text-green-600"
+                  }`}
+                >
                   {formatCurrency(invoice.balance_due)}
                 </p>
               </div>
@@ -488,13 +549,13 @@ export default function ReceiptDetailPage() {
               <div className="text-2xl font-bold text-green-600">
                 {formatCurrency(receipt.amount)}
               </div>
-              <div className="text-sm text-gray-600 mt-1">
-                Payment Amount
-              </div>
+              <div className="text-sm text-gray-600 mt-1">Payment Amount</div>
             </div>
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">
-                {invoice ? formatCurrency(invoice.amount_paid) : formatCurrency(receipt.amount)}
+                {invoice
+                  ? formatCurrency(invoice.amount_paid)
+                  : formatCurrency(receipt.amount)}
               </div>
               <div className="text-sm text-gray-600 mt-1">
                 Total Paid to Date
@@ -509,7 +570,7 @@ export default function ReceiptDetailPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <h3 className="text-sm font-medium text-gray-700 mb-2">
               Payment Details
@@ -517,19 +578,27 @@ export default function ReceiptDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-500">Receipt Number:</span>
-                <span className="ml-2 font-medium">{receipt.receipt_number}</span>
+                <span className="ml-2 font-medium">
+                  {receipt.receipt_number}
+                </span>
               </div>
               <div>
                 <span className="text-gray-500">Payment Method:</span>
-                <span className="ml-2 font-medium">{receipt.payment_method}</span>
+                <span className="ml-2 font-medium">
+                  {receipt.payment_method}
+                </span>
               </div>
               <div>
                 <span className="text-gray-500">Payment Date:</span>
-                <span className="ml-2 font-medium">{formatDate(receipt.payment_date)}</span>
+                <span className="ml-2 font-medium">
+                  {formatDate(receipt.payment_date)}
+                </span>
               </div>
               <div>
                 <span className="text-gray-500">Created:</span>
-                <span className="ml-2 font-medium">{formatDate(receipt.created_at)}</span>
+                <span className="ml-2 font-medium">
+                  {formatDate(receipt.created_at)}
+                </span>
               </div>
             </div>
           </div>
@@ -537,4 +606,4 @@ export default function ReceiptDetailPage() {
       </div>
     </div>
   );
-} 
+}

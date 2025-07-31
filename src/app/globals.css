@@ -21,23 +21,10 @@
   }
 }
 
-* {
-  /* Improve text rendering */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  font-kerning: auto;
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Use system fonts for better rendering */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', Arial, sans-serif;
-  /* Improve text sharpness */
-  font-variant-ligatures: none;
-  text-rendering: geometricPrecision;
-  -webkit-text-stroke: 0.01em transparent; /* Micro-stroke for sharper text */
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
 /* Custom utilities for glassmorphism effects */

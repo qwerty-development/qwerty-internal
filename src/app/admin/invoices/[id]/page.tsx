@@ -31,6 +31,7 @@ export default function InvoiceDetailPage() {
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Fetch invoice, client, receipts, and items data
   useEffect(() => {
@@ -287,6 +288,37 @@ export default function InvoiceDetailPage() {
     }
   };
 
+  // Send email with PDF
+  const handleSendEmail = async () => {
+    if (!client?.company_email) {
+      alert("Client does not have an email address.");
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`Email sent successfully to ${client.company_email}!`);
+      } else {
+        alert(`Failed to send email: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      alert("Failed to send email. Please try again.");
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   const handlePaymentChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -330,10 +362,19 @@ export default function InvoiceDetailPage() {
             >
               📄 {isGeneratingPDF ? "Generating..." : "Generate PDF"}
             </button>
+            {client?.company_email && (
+              <button
+                onClick={handleSendEmail}
+                disabled={isSendingEmail}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              >
+                📧 {isSendingEmail ? "Sending..." : "Send Email"}
+              </button>
+            )}
             {client && (
               <Link
                 href={`/admin/clients/${client.id}`}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
               >
                 View Client
               </Link>

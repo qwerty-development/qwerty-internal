@@ -571,7 +571,7 @@ export default function QuotationDetailPage() {
               <option value="">Select a client...</option>
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
-                                          {client.company_name} ({client.company_email})
+                  {client.company_name} ({client.company_email})
                 </option>
               ))}
             </select>
@@ -730,10 +730,21 @@ export default function QuotationDetailPage() {
         <div className="space-y-6">
           {/* Client Information */}
           <div className="bg-white rounded-lg shadow-md border p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Client Information
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Client Information
+              </h2>
+              {quotation.client_id ? (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Existing Client
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  New Client
+                </span>
+              )}
+            </div>
             <div className="space-y-3">
               <div>
                 <div className="text-sm font-medium text-gray-500 mb-1">

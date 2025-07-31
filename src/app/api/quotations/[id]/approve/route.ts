@@ -40,8 +40,6 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-
-
     // Fetch quotation with all client data
     const { data: quotation, error: quotationError } = await supabase
       .from("quotations")
@@ -64,10 +62,11 @@ export async function POST(
       );
     }
 
-    // Start transaction
+    // Determine the mode and handle client creation/assignment
     let clientId = quotation.client_id;
+    let clientCreated = false;
 
-    // If no client is assigned, create one from quotation data
+    // If no client is assigned (new client mode), create one from quotation data
     if (!clientId && quotation.company_name) {
       // Check if client with this company name already exists
       const { data: existingClient } = await supabase
@@ -84,12 +83,13 @@ export async function POST(
           .from("clients")
           .insert({
             company_name: quotation.company_name,
-            company_email:
-              quotation.client_contact_email || quotation.client_email || null,
-            contact_phone:
-              quotation.client_contact_phone || quotation.client_phone || null,
-            address: quotation.client_address || null,
-            notes: quotation.client_notes || null,
+            company_email: quotation.company_email || null,
+            contact_person_name: quotation.contact_person_name || null,
+            contact_person_email: quotation.contact_person_email || null,
+            contact_phone: quotation.contact_phone || null,
+            address: quotation.address || null,
+            mof_number: quotation.mof_number || null,
+            notes: quotation.notes || null,
             regular_balance: 0,
             paid_amount: 0,
           })
@@ -105,16 +105,18 @@ export async function POST(
         }
 
         clientId = newClient.id;
+        clientCreated = true;
       }
     }
 
-    // Update quotation status and assign client
+    // Update quotation status and assign client if needed
     const updateData: any = {
       status: "Approved",
       approved_at: new Date().toISOString(),
     };
 
-    if (clientId && !quotation.client_id) {
+    // Only update client_id if we have one and it's different from current
+    if (clientId && clientId !== quotation.client_id) {
       updateData.client_id = clientId;
     }
 
@@ -135,6 +137,7 @@ export async function POST(
       success: true,
       message: "Quotation approved successfully",
       clientId: clientId,
+      clientCreated: clientCreated,
     });
   } catch (error) {
     console.error("Error in quotation approval:", error);

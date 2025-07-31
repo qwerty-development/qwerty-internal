@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/utils/supabase/server";
-import { generatePDFTemplate, getBrandingSettings } from "@/utils/brandingService";
+import {
+  generatePDFTemplate,
+  getBrandingSettings,
+} from "@/utils/brandingService";
 
 // Create a service role client for admin operations
 const createServiceClient = () => {
@@ -169,21 +172,26 @@ async function generateInvoicePDFWithBranding(
   const branding = await getBrandingSettings();
 
   // Generate items table rows
-  const itemsRows = items.length > 0
-    ? items.map((item, index) => `
+  const itemsRows =
+    items.length > 0
+      ? items
+          .map(
+            (item, index) => `
         <tr>
           <td class="item-number">${index + 1}</td>
           <td>
             <div class="item-title">${item.title}</div>
           </td>
           <td>
-            <div class="item-description">${item.description || ''}</div>
+            <div class="item-description">${item.description || ""}</div>
           </td>
           <td style="text-align: center;">1</td>
           <td class="item-price">${formatCurrency(item.price)}</td>
         </tr>
-      `).join("")
-    : `
+      `
+          )
+          .join("")
+      : `
         <tr>
           <td class="item-number">1</td>
           <td>
@@ -199,8 +207,9 @@ async function generateInvoicePDFWithBranding(
       `;
 
   // Generate payment history
-  const paymentHistory = receipts.length > 0
-    ? `
+  const paymentHistory =
+    receipts.length > 0
+      ? `
         <table class="payment-history-table">
           <thead>
             <tr>
@@ -211,21 +220,27 @@ async function generateInvoicePDFWithBranding(
             </tr>
           </thead>
           <tbody>
-            ${receipts.map((receipt) => `
+            ${receipts
+              .map(
+                (receipt) => `
               <tr>
                 <td>${receipt.receipt_number}</td>
                 <td>${formatDate(receipt.payment_date)}</td>
                 <td class="amount-paid">${formatCurrency(receipt.amount)}</td>
                 <td>${receipt.payment_method}</td>
               </tr>
-            `).join("")}
+            `
+              )
+              .join("")}
           </tbody>
         </table>
       `
-    : `<div class="no-payments">No payments have been made for this invoice yet.</div>`;
+      : `<div class="no-payments">No payments have been made for this invoice yet.</div>`;
 
   // Generate client address
-  const clientAddress = client.address ? client.address.split('\n').join('<br>') : '';
+  const clientAddress = client.address
+    ? client.address.split("\n").join("<br>")
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -797,11 +812,11 @@ async function generateInvoicePDFWithBranding(
             <div class="header-right">
                 <div class="business-name">Invoice</div>
                 <div class="business-info">
-                    ${branding.company_name || 'qwerty'} <br>
-                    ${branding.company_address || 'Street Address Line 01'}<br>
-                    ${branding.company_phone || '+1 (999)-999-9999'}<br>
-                    ${branding.company_email || 'Email Address'}<br>
-                    ${branding.company_website || 'Website'}
+                    ${branding.company_name || "qwerty"} <br>
+                    ${branding.company_address || "Street Address Line 01"}<br>
+                    ${branding.company_phone || "+1 (999)-999-9999"}<br>
+                    ${branding.company_email || "Email Address"}<br>
+                    ${branding.company_website || "Website"}
                 </div>
             </div>
         </div>
@@ -817,7 +832,9 @@ async function generateInvoicePDFWithBranding(
                     </div>
                     <div class="info-row">
                         <div class="label">Date of Issue</div>
-                        <div class="value">${formatDate(invoice.issue_date)}</div>
+                        <div class="value">${formatDate(
+                          invoice.issue_date
+                        )}</div>
                     </div>
                     <div class="info-row">
                         <div class="label">Due Date</div>
@@ -826,7 +843,9 @@ async function generateInvoicePDFWithBranding(
                     <div class="info-row">
                         <div class="label">Status</div>
                         <div class="value">
-                            <span class="status-badge ${getStatusClass(invoice.status)}">${getStatusText(invoice.status)}</span>
+                            <span class="status-badge ${getStatusClass(
+                              invoice.status
+                            )}">${getStatusText(invoice.status)}</span>
                         </div>
                     </div>
                 </div>
@@ -837,39 +856,62 @@ async function generateInvoicePDFWithBranding(
                         <div class="label">Customer Name</div>
                         <div class="value">${client.company_name}</div>
                     </div>
-                    ${client.contact_person_name ? `
+                    ${
+                      client.contact_person_name
+                        ? `
                     <div class="info-row">
                         <div class="label">Contact Person</div>
                         <div class="value">${client.contact_person_name}</div>
                     </div>
-                    ` : ''}
-                    ${clientAddress ? `
+                    `
+                        : ""
+                    }
+                    ${
+                      clientAddress
+                        ? `
                     <div class="info-row">
                         <div class="label">Address</div>
                         <div class="value">${clientAddress}</div>
                     </div>
-                    ` : ''}
-                    ${client.company_email ? `
+                    `
+                        : ""
+                    }
+                    ${
+                      client.company_email
+                        ? `
                     <div class="info-row">
                         <div class="label">Email</div>
                         <div class="value">${client.company_email}</div>
                     </div>
-                    ` : ''}
-                    ${client.contact_phone ? `
+                    `
+                        : ""
+                    }
+                    ${
+                      client.contact_phone
+                        ? `
                     <div class="info-row">
                         <div class="label">Phone</div>
                         <div class="value">${client.contact_phone}</div>
                     </div>
-                    ` : ''}
+                    `
+                        : ""
+                    }
                 </div>
             </div>
 
-            ${invoice.description ? `
+            ${
+              invoice.description
+                ? `
             <!-- Compact Description for First Page -->
             <div class="description-compact">
-                <strong>Description:</strong> ${invoice.description.substring(0, 150)}${invoice.description.length > 150 ? '...' : ''}
+                <strong>Description:</strong> ${invoice.description.substring(
+                  0,
+                  150
+                )}${invoice.description.length > 150 ? "..." : ""}
             </div>
-            ` : ''}
+            `
+                : ""
+            }
 
             <!-- Items Table -->
             <div class="section-title">Items & Services</div>
@@ -889,23 +931,39 @@ async function generateInvoicePDFWithBranding(
                 <tfoot>
                     <tr style="background-color: #f8f9fa;">
                         <td colspan="4" style="text-align: right;">Subtotal:</td>
-                        <td class="item-price">${formatCurrency(invoice.total_amount)}</td>
+                        <td class="item-price">${formatCurrency(
+                          invoice.total_amount
+                        )}</td>
                     </tr>
-                    ${(invoice.discount && invoice.discount > 0) ? `
+                    ${
+                      invoice.discount && invoice.discount > 0
+                        ? `
                     <tr style="background-color: #f8f9fa;">
                         <td colspan="4" style="text-align: right;">Discount:</td>
-                        <td class="item-price">-${formatCurrency(invoice.discount)}</td>
+                        <td class="item-price">-${formatCurrency(
+                          invoice.discount
+                        )}</td>
                     </tr>
-                    ` : ''}
-                    ${(invoice.tax && invoice.tax > 0) ? `
+                    `
+                        : ""
+                    }
+                    ${
+                      invoice.tax && invoice.tax > 0
+                        ? `
                     <tr style="background-color: #f8f9fa;">
                         <td colspan="4" style="text-align: right;">Tax:</td>
-                        <td class="item-price">${formatCurrency(invoice.tax)}</td>
+                        <td class="item-price">${formatCurrency(
+                          invoice.tax
+                        )}</td>
                     </tr>
-                    ` : ''}
+                    `
+                        : ""
+                    }
                     <tr class="total-row">
                         <td colspan="4" style="text-align: right; font-weight: bold; font-size: 18px;">TOTAL:</td>
-                        <td class="item-price" style="font-weight: bold; font-size: 18px;">${formatCurrency(invoice.total_amount)}</td>
+                        <td class="item-price" style="font-weight: bold; font-size: 18px;">${formatCurrency(
+                          invoice.total_amount
+                        )}</td>
                     </tr>
                 </tfoot>
             </table>
@@ -921,15 +979,21 @@ async function generateInvoicePDFWithBranding(
                     <div class="payment-grid">
                         <div class="payment-item">
                             <div class="label">Total Amount</div>
-                            <div class="value">${formatCurrency(invoice.total_amount)}</div>
+                            <div class="value">${formatCurrency(
+                              invoice.total_amount
+                            )}</div>
                         </div>
                         <div class="payment-item amount-paid">
                             <div class="label">Amount Paid</div>
-                            <div class="value">${formatCurrency(invoice.amount_paid || 0)}</div>
+                            <div class="value">${formatCurrency(
+                              invoice.amount_paid || 0
+                            )}</div>
                         </div>
                         <div class="payment-item balance-due">
                             <div class="label">Balance Due</div>
-                            <div class="value">${formatCurrency(invoice.balance_due || 0)}</div>
+                            <div class="value">${formatCurrency(
+                              invoice.balance_due || 0
+                            )}</div>
                         </div>
                     </div>
                 </div>
@@ -974,3 +1038,5 @@ async function generateInvoicePDFWithBranding(
 </body>
 </html>`;
 }
+
+export { generateInvoicePDFWithBranding };

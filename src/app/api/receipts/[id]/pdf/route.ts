@@ -151,6 +151,8 @@ export async function GET(
   }
 }
 
+export { generateReceiptPDFWithBranding };
+
 async function generateReceiptPDFWithBranding(
   receipt: any,
   client: any,

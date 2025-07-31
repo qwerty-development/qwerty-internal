@@ -113,12 +113,14 @@ export async function POST(
       );
     }
 
-    // Start transaction
+    // Get client ID - should be assigned by now
     let clientId = quotation.client_id;
-    console.log("👤 Initial client ID:", clientId);
+    console.log("👤 Client ID from quotation:", clientId);
 
-    // If no client is assigned, create one from quotation data
+    // If no client is assigned, we need to create one from quotation data
     if (!clientId && quotation.company_name) {
+      console.log("👤 No client assigned, creating from quotation data...");
+
       // Check if client with this company name already exists
       const { data: existingClient } = await supabase
         .from("clients")
@@ -128,18 +130,20 @@ export async function POST(
 
       if (existingClient) {
         clientId = existingClient.id;
+        console.log("👤 Found existing client:", clientId);
       } else {
         // Create new client from quotation data
         const { data: newClient, error: clientError } = await supabase
           .from("clients")
           .insert({
             company_name: quotation.company_name,
-            company_email:
-              quotation.client_contact_email || quotation.client_email || null,
-            contact_phone:
-              quotation.client_contact_phone || quotation.client_phone || null,
-            address: quotation.client_address || null,
-            notes: quotation.client_notes || null,
+            company_email: quotation.company_email || null,
+            contact_person_name: quotation.contact_person_name || null,
+            contact_person_email: quotation.contact_person_email || null,
+            contact_phone: quotation.contact_phone || null,
+            address: quotation.address || null,
+            mof_number: quotation.mof_number || null,
+            notes: quotation.notes || null,
             regular_balance: 0,
             paid_amount: 0,
           })
@@ -155,6 +159,7 @@ export async function POST(
         }
 
         clientId = newClient.id;
+        console.log("👤 Created new client:", clientId);
       }
     }
 

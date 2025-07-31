@@ -23,15 +23,18 @@ interface QuotationItemData {
 }
 
 interface QuotationData {
-  // Client data
-  company_name: string;
-  company_email: string;
+  // Client data (for new client mode)
+  company_name?: string;
+  company_email?: string;
   contact_person_name?: string;
   contact_person_email?: string;
   contact_phone?: string;
   address?: string;
   mof_number?: string;
   notes?: string;
+
+  // Existing client reference (for existing client mode)
+  client_id?: string;
 
   // Quotation data
   description: string;
@@ -40,9 +43,6 @@ interface QuotationData {
   quotationDueDate?: string;
   totalAmount?: number;
   items?: QuotationItemData[];
-
-  // Optional existing client reference
-  clientId?: string;
 }
 
 // Generate next quotation number
@@ -92,21 +92,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate required fields
-    if (!quotationData.company_name?.trim()) {
+    // Determine the mode: new client or existing client
+    const isNewClientMode =
+      !quotationData.client_id && quotationData.company_name;
+    const isExistingClientMode =
+      quotationData.client_id && !quotationData.company_name;
+
+    if (!isNewClientMode && !isExistingClientMode) {
       return NextResponse.json(
-        { success: false, error: "Company name is required" },
+        {
+          success: false,
+          error:
+            "Either provide client_id for existing client or company_name for new client",
+        },
         { status: 400 }
       );
     }
 
-    if (!quotationData.company_email?.trim()) {
-      return NextResponse.json(
-        { success: false, error: "Company email is required" },
-        { status: 400 }
-      );
+    // Validate based on mode
+    if (isNewClientMode) {
+      // Validate required fields for new client mode
+      if (!quotationData.company_name?.trim()) {
+        return NextResponse.json(
+          { success: false, error: "Company name is required" },
+          { status: 400 }
+        );
+      }
+
+      if (!quotationData.company_email?.trim()) {
+        return NextResponse.json(
+          { success: false, error: "Company email is required" },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Validate existing client exists
+      const { data: existingClient, error: clientError } = await supabase
+        .from("clients")
+        .select("id, company_name")
+        .eq("id", quotationData.client_id)
+        .single();
+
+      if (clientError || !existingClient) {
+        return NextResponse.json(
+          { success: false, error: "Selected client not found" },
+          { status: 400 }
+        );
+      }
     }
 
+    // Validate quotation fields
     if (!quotationData.description?.trim()) {
       return NextResponse.json(
         { success: false, error: "Description is required" },
@@ -174,40 +209,73 @@ export async function POST(request: NextRequest) {
     // Get next quotation number
     const quotationNumber = await getNextQuotationNumber(supabase);
 
+    // Prepare quotation data based on mode
+    const quotationInsertData: any = {
+      // Quotation data
+      description: quotationData.description.trim(),
+      terms_and_conditions: quotationData.terms_and_conditions?.trim() || null,
+      quotation_issue_date: quotationData.quotationIssueDate,
+      quotation_due_date: quotationData.quotationDueDate || null,
+      total_amount: totalAmount,
+
+      // Keep the old fields for backward compatibility (set them to the same values)
+      issue_date: quotationData.quotationIssueDate,
+      due_date: quotationData.quotationDueDate || null,
+
+      // Quotation-specific
+      quotation_number: quotationNumber,
+      status: "Draft",
+      uses_items: usingItems,
+      is_converted: false,
+      created_by: session.user.id,
+    };
+
+    // Add client data based on mode
+    if (isNewClientMode) {
+      // New client mode - include all client data in quotation
+      quotationInsertData.company_name = quotationData.company_name?.trim();
+      quotationInsertData.company_email = quotationData.company_email?.trim();
+      quotationInsertData.contact_person_name =
+        quotationData.contact_person_name?.trim() || null;
+      quotationInsertData.contact_person_email =
+        quotationData.contact_person_email?.trim() || null;
+      quotationInsertData.contact_phone =
+        quotationData.contact_phone?.trim() || null;
+      quotationInsertData.address = quotationData.address?.trim() || null;
+      quotationInsertData.mof_number = quotationData.mof_number?.trim() || null;
+      quotationInsertData.notes = quotationData.notes?.trim() || null;
+      // client_id will be null for new client mode
+    } else {
+      // Existing client mode - set client_id and populate client data from existing client
+      quotationInsertData.client_id = quotationData.client_id;
+
+      // Fetch existing client data to populate quotation fields for display
+      const { data: existingClient } = await supabase
+        .from("clients")
+        .select(
+          "company_name, company_email, contact_person_name, contact_person_email, contact_phone, address, mof_number, notes"
+        )
+        .eq("id", quotationData.client_id)
+        .single();
+
+      if (existingClient) {
+        quotationInsertData.company_name = existingClient.company_name;
+        quotationInsertData.company_email = existingClient.company_email;
+        quotationInsertData.contact_person_name =
+          existingClient.contact_person_name;
+        quotationInsertData.contact_person_email =
+          existingClient.contact_person_email;
+        quotationInsertData.contact_phone = existingClient.contact_phone;
+        quotationInsertData.address = existingClient.address;
+        quotationInsertData.mof_number = existingClient.mof_number;
+        quotationInsertData.notes = existingClient.notes;
+      }
+    }
+
     // Create quotation with all fields
     const { data: quotationRecord, error: quotationError } = await supabase
       .from("quotations")
-      .insert({
-        // Client data
-        company_name: quotationData.company_name.trim(),
-        company_email: quotationData.company_email.trim(),
-        contact_person_name: quotationData.contact_person_name?.trim() || null,
-        contact_person_email:
-          quotationData.contact_person_email?.trim() || null,
-        contact_phone: quotationData.contact_phone?.trim() || null,
-        address: quotationData.address?.trim() || null,
-        mof_number: quotationData.mof_number?.trim() || null,
-        notes: quotationData.notes?.trim() || null,
-
-        // Quotation data
-        description: quotationData.description.trim(),
-        terms_and_conditions:
-          quotationData.terms_and_conditions?.trim() || null,
-        quotation_issue_date: quotationData.quotationIssueDate,
-        quotation_due_date: quotationData.quotationDueDate || null,
-        total_amount: totalAmount,
-
-        // Keep the old fields for backward compatibility (set them to the same values)
-        issue_date: quotationData.quotationIssueDate,
-        due_date: quotationData.quotationDueDate || null,
-
-        // Quotation-specific
-        quotation_number: quotationNumber,
-        status: "Draft",
-        uses_items: usingItems,
-        is_converted: false,
-        created_by: session.user.id,
-      })
+      .insert(quotationInsertData)
       .select()
       .single();
 
