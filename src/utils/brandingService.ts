@@ -506,4 +506,5 @@ export async function generatePDFTemplate(
     </body>
     </html>
   `;
+  
 }
