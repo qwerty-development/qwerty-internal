@@ -105,9 +105,9 @@ export async function POST(
       );
     }
 
-    // Import the PDF generation function dynamically to avoid circular dependencies
+    // Import the PDF generation function from the utility
     const { generateReceiptPDFWithBranding } = await import(
-      "@/app/api/receipts/[id]/pdf/route"
+      "@/utils/receiptPdfGenerator"
     );
 
     // Generate PDF HTML content

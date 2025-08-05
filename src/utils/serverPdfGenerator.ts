@@ -6,7 +6,7 @@ export async function generateInvoicePDFBuffer(
 ): Promise<Buffer> {
   try {
     const browser = await puppeteer.launch({
-      headless: "new",
+      headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
@@ -31,7 +31,7 @@ export async function generateInvoicePDFBuffer(
     });
 
     await browser.close();
-    return pdfBuffer;
+    return Buffer.from(pdfBuffer);
   } catch (error) {
     console.error("Error generating invoice PDF buffer:", error);
     throw error;
@@ -44,7 +44,7 @@ export async function generateReceiptPDFBuffer(
 ): Promise<Buffer> {
   try {
     const browser = await puppeteer.launch({
-      headless: "new",
+      headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
@@ -69,7 +69,7 @@ export async function generateReceiptPDFBuffer(
     });
 
     await browser.close();
-    return pdfBuffer;
+    return Buffer.from(pdfBuffer);
   } catch (error) {
     console.error("Error generating receipt PDF buffer:", error);
     throw error;

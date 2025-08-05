@@ -27,8 +27,15 @@ const createTransporter = () => {
 // Email templates
 export const emailTemplates = {
   invoice: {
-    subject: (invoiceNumber: string, companyName: string) => `Invoice ${invoiceNumber} from ${companyName}`,
-    html: (invoiceNumber: string, clientName: string, totalAmount: number, companyName: string, companyEmail: string) => `
+    subject: (invoiceNumber: string, companyName: string) =>
+      `Invoice ${invoiceNumber} from ${companyName}`,
+    html: (
+      invoiceNumber: string,
+      clientName: string,
+      totalAmount: number,
+      companyName: string,
+      companyEmail: string
+    ) => `
       <!DOCTYPE html>
       <html>
       <head>
@@ -67,8 +74,15 @@ export const emailTemplates = {
     `,
   },
   receipt: {
-    subject: (receiptNumber: string, companyName: string) => `Receipt ${receiptNumber} from ${companyName}`,
-    html: (receiptNumber: string, clientName: string, amount: number, companyName: string, companyEmail: string) => `
+    subject: (receiptNumber: string, companyName: string) =>
+      `Receipt ${receiptNumber} from ${companyName}`,
+    html: (
+      receiptNumber: string,
+      clientName: string,
+      amount: number,
+      companyName: string,
+      companyEmail: string
+    ) => `
       <!DOCTYPE html>
       <html>
       <head>
@@ -132,8 +146,17 @@ export async function sendInvoiceEmail(
     const mailOptions = {
       from: `"${branding.company_name}" <${emailConfig.auth.user}>`,
       to: toEmail,
-      subject: emailTemplates.invoice.subject(invoiceNumber, branding.company_name),
-      html: emailTemplates.invoice.html(invoiceNumber, clientName, totalAmount, branding.company_name, branding.company_email),
+      subject: emailTemplates.invoice.subject(
+        invoiceNumber,
+        branding.company_name
+      ),
+      html: emailTemplates.invoice.html(
+        invoiceNumber,
+        clientName,
+        totalAmount,
+        branding.company_name,
+        branding.company_email || emailConfig.auth.user
+      ),
       attachments: [
         {
           filename: `invoice-${invoiceNumber}.pdf`,
@@ -177,8 +200,17 @@ export async function sendReceiptEmail(
     const mailOptions = {
       from: `"${branding.company_name}" <${emailConfig.auth.user}>`,
       to: toEmail,
-      subject: emailTemplates.receipt.subject(receiptNumber, branding.company_name),
-      html: emailTemplates.receipt.html(receiptNumber, clientName, amount, branding.company_name, branding.company_email),
+      subject: emailTemplates.receipt.subject(
+        receiptNumber,
+        branding.company_name
+      ),
+      html: emailTemplates.receipt.html(
+        receiptNumber,
+        clientName,
+        amount,
+        branding.company_name,
+        branding.company_email || emailConfig.auth.user
+      ),
       attachments: [
         {
           filename: `receipt-${receiptNumber}.pdf`,
