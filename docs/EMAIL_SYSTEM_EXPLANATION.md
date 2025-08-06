@@ -41,7 +41,7 @@ The request goes to `/api/invoices/[id]/send-email` or `/api/receipts/[id]/send-
 2. **Fetch Data**: Gets invoice/receipt, client, and related data from database
 3. **Validate**: Ensures client has an email address
 4. **Generate PDF**: Creates PDF content using existing PDF generation functions
-5. **Convert to Buffer**: Uses Puppeteer to convert HTML to PDF buffer
+5. **Convert to Buffer**: Uses jsPDF to convert HTML to PDF buffer
 6. **Send Email**: Uses Nodemailer to send email with PDF attached
 7. **Return Response**: Success/error message back to frontend
 
@@ -67,15 +67,16 @@ const pdfHtml = await generateInvoicePDFWithBranding(
 #### Step 4b: Convert HTML to PDF Buffer
 
 ```typescript
-// Use Puppeteer to convert HTML to PDF buffer
+// Use jsPDF to convert HTML to PDF buffer
 const pdfBuffer = await generateInvoicePDFBuffer(pdfHtml);
 ```
 
-**Why Puppeteer?**
+**Why jsPDF?**
 
 - The existing PDF system uses client-side libraries (jsPDF, html2canvas) for direct download
 - For email attachments, we need a server-side PDF buffer
-- Puppeteer runs a headless browser to render HTML and generate PDF
+- jsPDF is a pure JavaScript library that works well in serverless environments like Vercel
+- No need for Chrome/headless browser installation
 
 ### 5. Email Sending Process
 
@@ -155,7 +156,7 @@ src/
 ### 2. `serverPdfGenerator.ts`
 
 - **Purpose**: Convert HTML to PDF buffer for email attachments
-- **Uses**: Puppeteer (headless browser)
+- **Uses**: jsPDF (pure JavaScript PDF library)
 - **Input**: HTML content from existing PDF generation
 - **Output**: PDF buffer for email attachment
 
@@ -203,23 +204,10 @@ The system uses pre-formatted HTML email templates that include:
 
 1. **"createTransporter is not a function"**: Fixed - was a typo in function name
 2. **"Email credentials not configured"**: Set EMAIL_USER and EMAIL_PASS in .env.local
-3. **"Failed to send email"**: Check SMTP settings and credentials
+3. **PDF generation errors**: Now uses jsPDF which works reliably in serverless environments
 
-### Debug Steps:
+## Deployment Notes
 
-1. Check environment variables with `/api/test-email-config`
-2. Verify client has email address
-3. Check server logs for detailed error messages
-4. Test SMTP credentials manually
-
-## Summary
-
-The email system is a seamless integration that:
-
-1. **Reuses existing PDF generation** (no duplication of code)
-2. **Adds server-side PDF conversion** for email attachments
-3. **Uses Nodemailer** for reliable email delivery
-4. **Provides professional email templates** with company branding
-5. **Includes comprehensive error handling** for easy debugging
-
-The entire process happens server-side, ensuring security and reliability while providing a smooth user experience.
+- **Vercel Compatible**: Uses jsPDF instead of Puppeteer for better serverless compatibility
+- **No Chrome Required**: Pure JavaScript solution works in all environments
+- **Fast Generation**: jsPDF is lightweight and fast for PDF generation
