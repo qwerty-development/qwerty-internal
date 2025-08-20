@@ -1,10 +1,11 @@
-import { generatePDFTemplate } from "@/utils/brandingService";
+import { generatePDFTemplate, getBrandingSettings } from "@/utils/brandingService";
 
 export async function generateReceiptPDFWithBranding(
   receipt: any,
   client: any,
   invoice: any
 ) {
+  const branding = await getBrandingSettings();
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -32,7 +33,18 @@ export async function generateReceiptPDFWithBranding(
   };
 
   // Generate the content HTML
+  const receivedByDisplay = branding.company_name
+    ? branding.company_name + (receipt.received_by ? ` - ${receipt.received_by}` : "")
+    : (receipt.received_by || "");
+
   const content = `
+    <style>
+      /* Remove any top gap for receipts; header is suppressed via template */
+      @page { size: A4; margin: 0mm 12mm 12mm 12mm; }
+      .page-wrap { padding-top: 6mm !important; }
+      .header { display: none !important; }
+      html, body { margin: 0 !important; padding: 0 !important; }
+    </style>
     <div class="receipt-main">
       <!-- Payment Amount - Most Prominent -->
       <div class="payment-amount-section">
@@ -52,6 +64,10 @@ export async function generateReceiptPDFWithBranding(
           <span class="detail-value payment-method">${
             receipt.payment_method
           }</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Received By:</span>
+          <span class="detail-value">${receivedByDisplay || branding.company_name || "qwerty"}</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Date:</span>
@@ -151,6 +167,6 @@ export async function generateReceiptPDFWithBranding(
     </div>
   `;
 
-  // Use the centralized branding service
-  return await generatePDFTemplate("Receipt", receipt.receipt_number, content);
+  // Use the centralized branding service with no-header mode
+  return await generatePDFTemplate("Receipt_NoHeader", receipt.receipt_number, content);
 }

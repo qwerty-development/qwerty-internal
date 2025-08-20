@@ -416,6 +416,54 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
     // Remove the temporary div
     document.body.removeChild(tempDiv);
 
+    // Trim any white space at the top of the canvas to eliminate visible top gap
+    const findTopContentY = (sourceCanvas: HTMLCanvasElement): number => {
+      const context = sourceCanvas.getContext('2d');
+      if (!context) return 0;
+      const { width, height } = sourceCanvas;
+      const whiteThreshold = 250; // treat anything close to white as empty
+      const sampleStride = Math.max(1, Math.floor(width / 400)); // subsample wide rows for speed
+      for (let y = 0; y < height; y++) {
+        const row = context.getImageData(0, y, width, 1).data;
+        let rowEmpty = true;
+        for (let x = 0; x < width; x += sampleStride) {
+          const i = x * 4;
+          const r = row[i];
+          const g = row[i + 1];
+          const b = row[i + 2];
+          const a = row[i + 3];
+          // Consider non-transparent and not almost white as content
+          if (a > 5 && (r < whiteThreshold || g < whiteThreshold || b < whiteThreshold)) {
+            rowEmpty = false;
+            break;
+          }
+        }
+        if (!rowEmpty) return y;
+      }
+      return 0;
+    };
+
+    // Preserve a ~6mm margin at the top (at 96 DPI A4 width 794px, mm per px ~ 210mm/794px)
+    const mmPerPx = 210 / 794; // ~0.2647 mm/px
+    const desiredTopMarginMm = 6;
+    const desiredTopMarginPx = Math.round(desiredTopMarginMm / mmPerPx);
+    const topCropRaw = findTopContentY(canvas);
+    const topCrop = Math.max(0, topCropRaw - desiredTopMarginPx);
+    const workingCanvas = topCrop > 0 ? (() => {
+      const c = document.createElement('canvas');
+      c.width = canvas.width;
+      c.height = Math.max(1, canvas.height - topCrop);
+      const ctx = c.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(
+          canvas,
+          0, topCrop, canvas.width, canvas.height - topCrop,
+          0, 0, canvas.width, canvas.height - topCrop
+        );
+      }
+      return c;
+    })() : canvas;
+
     // Create PDF with compression
     const pdf = new jsPDF({
       orientation: "portrait",
@@ -425,13 +473,13 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
       precision: 3
     });
 
-    const imgData = canvas.toDataURL("image/jpeg", 0.95);
+    const imgData = workingCanvas.toDataURL("image/jpeg", 0.95);
 
     // Calculate dimensions for FULL WIDTH
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const imgWidth = pdfWidth; // FULL WIDTH
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgHeight = (workingCanvas.height * imgWidth) / workingCanvas.width;
 
     // Add image to PDF - full width
     if (imgHeight <= pdfHeight) {
@@ -445,13 +493,13 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
         
         const pageCanvas = document.createElement('canvas');
         const pageCtx = pageCanvas.getContext('2d');
-        const srcY = (i * pageHeight * canvas.width) / imgWidth;
+        const srcY = (i * pageHeight * workingCanvas.width) / imgWidth;
         const srcHeight = Math.min(
-          (pageHeight * canvas.width) / imgWidth,
-          canvas.height - srcY
+          (pageHeight * workingCanvas.width) / imgWidth,
+          workingCanvas.height - srcY
         );
         
-        pageCanvas.width = canvas.width;
+        pageCanvas.width = workingCanvas.width;
         pageCanvas.height = srcHeight;
         
         if (pageCtx) {
@@ -459,13 +507,13 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
           pageCtx.imageSmoothingQuality = 'high';
           
           pageCtx.drawImage(
-            canvas,
-            0, srcY, canvas.width, srcHeight,
-            0, 0, canvas.width, srcHeight
+            workingCanvas,
+            0, srcY, workingCanvas.width, srcHeight,
+            0, 0, workingCanvas.width, srcHeight
           );
           
           const pageImgData = pageCanvas.toDataURL("image/jpeg", 0.95);
-          const pageImgHeight = (srcHeight * imgWidth) / canvas.width;
+          const pageImgHeight = (srcHeight * imgWidth) / workingCanvas.width;
           
           pdf.addImage(pageImgData, "JPEG", 0, 0, imgWidth, pageImgHeight);
         }
@@ -539,6 +587,53 @@ export async function generateReceiptPDF(receiptId: string): Promise<void> {
     // Remove the temporary div
     document.body.removeChild(tempDiv);
 
+    // Trim any white space at the top of the canvas to eliminate visible top gap
+    const findTopContentY = (sourceCanvas: HTMLCanvasElement): number => {
+      const context = sourceCanvas.getContext('2d');
+      if (!context) return 0;
+      const { width, height } = sourceCanvas;
+      const whiteThreshold = 250; // treat anything close to white as empty
+      const sampleStride = Math.max(1, Math.floor(width / 400));
+      for (let y = 0; y < height; y++) {
+        const row = context.getImageData(0, y, width, 1).data;
+        let rowEmpty = true;
+        for (let x = 0; x < width; x += sampleStride) {
+          const i = x * 4;
+          const r = row[i];
+          const g = row[i + 1];
+          const b = row[i + 2];
+          const a = row[i + 3];
+          if (a > 5 && (r < whiteThreshold || g < whiteThreshold || b < whiteThreshold)) {
+            rowEmpty = false;
+            break;
+          }
+        }
+        if (!rowEmpty) return y;
+      }
+      return 0;
+    };
+
+    // Preserve a ~6mm margin at the top (A4 width 210mm → 794px)
+    const mmPerPx = 210 / 794;
+    const desiredTopMarginMm = 6;
+    const desiredTopMarginPx = Math.round(desiredTopMarginMm / mmPerPx);
+    const topCropRaw = findTopContentY(canvas);
+    const topCrop = Math.max(0, topCropRaw - desiredTopMarginPx);
+    const workingCanvas = topCrop > 0 ? (() => {
+      const c = document.createElement('canvas');
+      c.width = canvas.width;
+      c.height = Math.max(1, canvas.height - topCrop);
+      const ctx = c.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(
+          canvas,
+          0, topCrop, canvas.width, canvas.height - topCrop,
+          0, 0, canvas.width, canvas.height - topCrop
+        );
+      }
+      return c;
+    })() : canvas;
+
     // Create PDF with compression
     const pdf = new jsPDF({
       orientation: "portrait",
@@ -548,13 +643,13 @@ export async function generateReceiptPDF(receiptId: string): Promise<void> {
       precision: 3
     });
 
-    const imgData = canvas.toDataURL("image/jpeg", 0.95);
+    const imgData = workingCanvas.toDataURL("image/jpeg", 0.95);
 
     // Calculate dimensions for FULL WIDTH
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const imgWidth = pdfWidth; // FULL WIDTH
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgHeight = (workingCanvas.height * imgWidth) / workingCanvas.width;
 
     // Add image to PDF - full width
     if (imgHeight <= pdfHeight) {
@@ -568,13 +663,13 @@ export async function generateReceiptPDF(receiptId: string): Promise<void> {
         
         const pageCanvas = document.createElement('canvas');
         const pageCtx = pageCanvas.getContext('2d');
-        const srcY = (i * pageHeight * canvas.width) / imgWidth;
+        const srcY = (i * pageHeight * workingCanvas.width) / imgWidth;
         const srcHeight = Math.min(
-          (pageHeight * canvas.width) / imgWidth,
-          canvas.height - srcY
+          (pageHeight * workingCanvas.width) / imgWidth,
+          workingCanvas.height - srcY
         );
         
-        pageCanvas.width = canvas.width;
+        pageCanvas.width = workingCanvas.width;
         pageCanvas.height = srcHeight;
         
         if (pageCtx) {
@@ -582,13 +677,13 @@ export async function generateReceiptPDF(receiptId: string): Promise<void> {
           pageCtx.imageSmoothingQuality = 'high';
           
           pageCtx.drawImage(
-            canvas,
-            0, srcY, canvas.width, srcHeight,
-            0, 0, canvas.width, srcHeight
+            workingCanvas,
+            0, srcY, workingCanvas.width, srcHeight,
+            0, 0, workingCanvas.width, srcHeight
           );
           
           const pageImgData = pageCanvas.toDataURL("image/jpeg", 0.95);
-          const pageImgHeight = (srcHeight * imgWidth) / canvas.width;
+          const pageImgHeight = (srcHeight * imgWidth) / workingCanvas.width;
           
           pdf.addImage(pageImgData, "JPEG", 0, 0, imgWidth, pageImgHeight);
         }
