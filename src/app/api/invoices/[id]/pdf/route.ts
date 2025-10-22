@@ -814,6 +814,7 @@ async function generateInvoicePDFWithBranding(
                 <div class="business-info">
                     ${branding.company_name || "qwerty"} <br>
                     ${branding.company_address || "Street Address Line 01"}<br>
+                    MOF: 4066246<br>
                     ${branding.company_phone || "+1 (999)-999-9999"}<br>
                     ${branding.company_email || "Email Address"}<br>
                     ${branding.company_website || "Website"}
