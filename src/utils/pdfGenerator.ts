@@ -30,7 +30,7 @@ export async function generateInvoicePDF(invoiceId: string): Promise<void> {
     document.body.appendChild(tempDiv);
 
     // Wait for fonts and images to load
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // BALANCED: Good quality with reasonable file size
     const canvas = await html2canvas(tempDiv, {
@@ -47,21 +47,21 @@ export async function generateInvoicePDF(invoiceId: string): Promise<void> {
       foreignObjectRendering: false,
       onclone: (clonedDoc) => {
         // Optimize images in the cloned document
-        const images = clonedDoc.querySelectorAll('img');
-        images.forEach(img => {
-          img.style.maxWidth = '100%';
-          img.style.height = 'auto';
+        const images = clonedDoc.querySelectorAll("img");
+        images.forEach((img) => {
+          img.style.maxWidth = "100%";
+          img.style.height = "auto";
         });
-        
+
         // Improve text rendering
-        const allElements = clonedDoc.querySelectorAll('*');
-        allElements.forEach(el => {
+        const allElements = clonedDoc.querySelectorAll("*");
+        allElements.forEach((el) => {
           if (el instanceof HTMLElement) {
-            (el.style as any).webkitFontSmoothing = 'antialiased';
-            (el.style as any).mozOsxFontSmoothing = 'grayscale';
+            (el.style as any).webkitFontSmoothing = "antialiased";
+            (el.style as any).mozOsxFontSmoothing = "grayscale";
           }
         });
-      }
+      },
     });
 
     // Remove the temporary div
@@ -73,7 +73,7 @@ export async function generateInvoicePDF(invoiceId: string): Promise<void> {
       unit: "mm",
       format: "a4",
       compress: true, // Enable compression
-      precision: 2
+      precision: 2,
     });
 
     // BALANCED: Use JPEG with higher quality for crisp text
@@ -93,33 +93,39 @@ export async function generateInvoicePDF(invoiceId: string): Promise<void> {
       // Multiple pages - crop the canvas for each page
       const pageHeight = pdfHeight - 10;
       const pagesNeeded = Math.ceil(imgHeight / pageHeight);
-      
+
       for (let i = 0; i < pagesNeeded; i++) {
         if (i > 0) pdf.addPage();
-        
+
         // Calculate the portion of the image for this page
         const srcY = (i * pageHeight * canvas.width) / imgWidth;
         const srcHeight = Math.min(
           (pageHeight * canvas.width) / imgWidth,
           canvas.height - srcY
         );
-        
+
         // Create a smaller canvas for this page section
-        const pageCanvas = document.createElement('canvas');
-        const pageCtx = pageCanvas.getContext('2d');
+        const pageCanvas = document.createElement("canvas");
+        const pageCtx = pageCanvas.getContext("2d");
         pageCanvas.width = canvas.width;
         pageCanvas.height = srcHeight;
-        
+
         if (pageCtx) {
           pageCtx.drawImage(
             canvas,
-            0, srcY, canvas.width, srcHeight,
-            0, 0, canvas.width, srcHeight
+            0,
+            srcY,
+            canvas.width,
+            srcHeight,
+            0,
+            0,
+            canvas.width,
+            srcHeight
           );
-          
+
           const pageImgData = pageCanvas.toDataURL("image/jpeg", 0.8);
           const pageImgHeight = (srcHeight * imgWidth) / canvas.width;
-          
+
           pdf.addImage(pageImgData, "JPEG", 5, 5, imgWidth, pageImgHeight);
         }
       }
@@ -135,7 +141,9 @@ export async function generateInvoicePDF(invoiceId: string): Promise<void> {
 }
 
 // ALTERNATIVE: Even more optimized version using smaller dimensions
-export async function generateInvoicePDFCompact(invoiceId: string): Promise<void> {
+export async function generateInvoicePDFCompact(
+  invoiceId: string
+): Promise<void> {
   try {
     const response = await fetch(`/api/invoices/${invoiceId}/pdf`);
     const data: InvoicePDFData | PDFGenerationError = await response.json();
@@ -156,7 +164,7 @@ export async function generateInvoicePDFCompact(invoiceId: string): Promise<void
     tempDiv.style.fontSize = "12px"; // Smaller font for compact layout
     document.body.appendChild(tempDiv);
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // ULTRA OPTIMIZED: Very low scale and smaller dimensions
     const canvas = await html2canvas(tempDiv, {
@@ -178,7 +186,7 @@ export async function generateInvoicePDFCompact(invoiceId: string): Promise<void
       unit: "pt",
       format: "a4",
       compress: true,
-      precision: 1 // Lower precision
+      precision: 1, // Lower precision
     });
 
     // Use JPEG with lower quality for maximum compression
@@ -195,31 +203,37 @@ export async function generateInvoicePDFCompact(invoiceId: string): Promise<void
       // Handle multiple pages with cropping
       const pageHeight = pdfHeight - 40;
       const pagesNeeded = Math.ceil(imgHeight / pageHeight);
-      
+
       for (let i = 0; i < pagesNeeded; i++) {
         if (i > 0) pdf.addPage();
-        
-        const pageCanvas = document.createElement('canvas');
-        const pageCtx = pageCanvas.getContext('2d');
+
+        const pageCanvas = document.createElement("canvas");
+        const pageCtx = pageCanvas.getContext("2d");
         const srcY = (i * pageHeight * canvas.width) / imgWidth;
         const srcHeight = Math.min(
           (pageHeight * canvas.width) / imgWidth,
           canvas.height - srcY
         );
-        
+
         pageCanvas.width = canvas.width;
         pageCanvas.height = srcHeight;
-        
+
         if (pageCtx) {
           pageCtx.drawImage(
             canvas,
-            0, srcY, canvas.width, srcHeight,
-            0, 0, canvas.width, srcHeight
+            0,
+            srcY,
+            canvas.width,
+            srcHeight,
+            0,
+            0,
+            canvas.width,
+            srcHeight
           );
-          
+
           const pageImgData = pageCanvas.toDataURL("image/jpeg", 0.6);
           const pageImgHeight = (srcHeight * imgWidth) / canvas.width;
-          
+
           pdf.addImage(pageImgData, "JPEG", 20, 20, imgWidth, pageImgHeight);
         }
       }
@@ -234,7 +248,9 @@ export async function generateInvoicePDFCompact(invoiceId: string): Promise<void
 }
 
 // BEST APPROACH: Native PDF generation without html2canvas
-export async function generateInvoicePDFNative(invoiceId: string): Promise<void> {
+export async function generateInvoicePDFNative(
+  invoiceId: string
+): Promise<void> {
   try {
     const response = await fetch(`/api/invoices/${invoiceId}/pdf`);
     const data: InvoicePDFData | PDFGenerationError = await response.json();
@@ -248,107 +264,119 @@ export async function generateInvoicePDFNative(invoiceId: string): Promise<void>
       orientation: "portrait",
       unit: "mm",
       format: "a4",
-      compress: true
+      compress: true,
     });
 
     const { invoice, client, items, receipts } = data;
-    
+
     // Native PDF generation - much smaller file size!
     let yPosition = 20;
-    
+
     // Header
     pdf.setFillColor(1, 48, 63);
-    pdf.rect(0, 0, 210, 50, 'F');
-    
+    pdf.rect(0, 0, 210, 50, "F");
+
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(24);
-    pdf.text('INVOICE', 20, 30);
-    
+    pdf.text("INVOICE", 20, 30);
+
     // Company info
     pdf.setFontSize(12);
-    pdf.text('Your Company Name', 120, 25);
-    pdf.text('123 Business Street', 120, 32);
-    pdf.text('City, State 12345', 120, 39);
-    
+    pdf.text("Your Company Name", 120, 25);
+    pdf.text("123 Business Street", 120, 32);
+    pdf.text("City, State 12345", 120, 39);
+
     yPosition = 60;
     pdf.setTextColor(0, 0, 0);
-    
+
     // Invoice details
     pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Invoice Details', 20, yPosition);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Invoice Details", 20, yPosition);
     yPosition += 10;
-    
+
     pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
+    pdf.setFont("helvetica", "normal");
     pdf.text(`Invoice #: ${invoice.invoice_number}`, 20, yPosition);
     yPosition += 6;
-    pdf.text(`Date: ${new Date(invoice.issue_date).toLocaleDateString()}`, 20, yPosition);
+    pdf.text(
+      `Date: ${new Date(invoice.issue_date).toLocaleDateString()}`,
+      20,
+      yPosition
+    );
     yPosition += 6;
-    pdf.text(`Due Date: ${new Date(invoice.due_date).toLocaleDateString()}`, 20, yPosition);
+    pdf.text(
+      `Due Date: ${new Date(invoice.due_date).toLocaleDateString()}`,
+      20,
+      yPosition
+    );
     yPosition += 15;
-    
+
     // Client details
     pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Bill To', 20, yPosition);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Bill To", 20, yPosition);
     yPosition += 10;
-    
+
     pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
+    pdf.setFont("helvetica", "normal");
     pdf.text(client.company_name, 20, yPosition);
     yPosition += 6;
     if (client.contact_person_name) {
       pdf.text(client.contact_person_name, 20, yPosition);
       yPosition += 6;
     }
+    if (client.mof_number) {
+      pdf.text(`MOF: ${client.mof_number}`, 20, yPosition);
+      yPosition += 6;
+    }
     yPosition += 15;
-    
+
     // Items table
     pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Items & Services', 20, yPosition);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Items & Services", 20, yPosition);
     yPosition += 10;
-    
+
     // Table headers
     pdf.setFillColor(240, 240, 240);
-    pdf.rect(20, yPosition - 5, 170, 8, 'F');
-    
+    pdf.rect(20, yPosition - 5, 170, 8, "F");
+
     pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('#', 25, yPosition);
-    pdf.text('Description', 40, yPosition);
-    pdf.text('Qty', 140, yPosition);
-    pdf.text('Amount', 160, yPosition);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("#", 25, yPosition);
+    pdf.text("Description", 40, yPosition);
+    pdf.text("Qty", 140, yPosition);
+    pdf.text("Amount", 160, yPosition);
     yPosition += 10;
-    
+
     // Table rows
-    pdf.setFont('helvetica', 'normal');
+    pdf.setFont("helvetica", "normal");
     if (items.length > 0) {
       items.forEach((item, index) => {
         pdf.text((index + 1).toString(), 25, yPosition);
         pdf.text(item.title, 40, yPosition);
-        pdf.text('1', 140, yPosition);
+        pdf.text("1", 140, yPosition);
         pdf.text(`$${item.price.toFixed(2)}`, 160, yPosition);
         yPosition += 8;
       });
     } else {
-      pdf.text('1', 25, yPosition);
-      pdf.text('Invoice Item', 40, yPosition);
-      pdf.text('1', 140, yPosition);
+      pdf.text("1", 25, yPosition);
+      pdf.text("Invoice Item", 40, yPosition);
+      pdf.text("1", 140, yPosition);
       pdf.text(`$${invoice.total_amount.toFixed(2)}`, 160, yPosition);
       yPosition += 8;
     }
-    
+
     // Total
     yPosition += 5;
     pdf.line(20, yPosition, 190, yPosition);
     yPosition += 8;
-    
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('TOTAL:', 140, yPosition);
+
+    pdf.setFont("helvetica", "bold");
+    pdf.text("TOTAL:", 140, yPosition);
     pdf.text(`$${invoice.total_amount.toFixed(2)}`, 160, yPosition);
-    
+
     const fileName = `invoice-${invoice.invoice_number}.pdf`;
     pdf.save(fileName);
   } catch (error) {
@@ -381,7 +409,7 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
     document.body.appendChild(tempDiv);
 
     // Wait for fonts and images to load
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // HIGH QUALITY: Better clarity, full width
     const canvas = await html2canvas(tempDiv, {
@@ -396,21 +424,21 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
       imageTimeout: 15000,
       foreignObjectRendering: false,
       onclone: (clonedDoc) => {
-        const images = clonedDoc.querySelectorAll('img');
-        images.forEach(img => {
-          img.style.maxWidth = '100%';
-          img.style.height = 'auto';
+        const images = clonedDoc.querySelectorAll("img");
+        images.forEach((img) => {
+          img.style.maxWidth = "100%";
+          img.style.height = "auto";
         });
-        
-        const allElements = clonedDoc.querySelectorAll('*');
-        allElements.forEach(el => {
+
+        const allElements = clonedDoc.querySelectorAll("*");
+        allElements.forEach((el) => {
           if (el instanceof HTMLElement) {
-            (el.style as any).webkitFontSmoothing = 'antialiased';
-            (el.style as any).mozOsxFontSmoothing = 'grayscale';
-            el.style.textRendering = 'optimizeLegibility';
+            (el.style as any).webkitFontSmoothing = "antialiased";
+            (el.style as any).mozOsxFontSmoothing = "grayscale";
+            el.style.textRendering = "optimizeLegibility";
           }
         });
-      }
+      },
     });
 
     // Remove the temporary div
@@ -418,7 +446,7 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
 
     // Trim any white space at the top of the canvas to eliminate visible top gap
     const findTopContentY = (sourceCanvas: HTMLCanvasElement): number => {
-      const context = sourceCanvas.getContext('2d');
+      const context = sourceCanvas.getContext("2d");
       if (!context) return 0;
       const { width, height } = sourceCanvas;
       const whiteThreshold = 250; // treat anything close to white as empty
@@ -433,7 +461,10 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
           const b = row[i + 2];
           const a = row[i + 3];
           // Consider non-transparent and not almost white as content
-          if (a > 5 && (r < whiteThreshold || g < whiteThreshold || b < whiteThreshold)) {
+          if (
+            a > 5 &&
+            (r < whiteThreshold || g < whiteThreshold || b < whiteThreshold)
+          ) {
             rowEmpty = false;
             break;
           }
@@ -449,20 +480,29 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
     const desiredTopMarginPx = Math.round(desiredTopMarginMm / mmPerPx);
     const topCropRaw = findTopContentY(canvas);
     const topCrop = Math.max(0, topCropRaw - desiredTopMarginPx);
-    const workingCanvas = topCrop > 0 ? (() => {
-      const c = document.createElement('canvas');
-      c.width = canvas.width;
-      c.height = Math.max(1, canvas.height - topCrop);
-      const ctx = c.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(
-          canvas,
-          0, topCrop, canvas.width, canvas.height - topCrop,
-          0, 0, canvas.width, canvas.height - topCrop
-        );
-      }
-      return c;
-    })() : canvas;
+    const workingCanvas =
+      topCrop > 0
+        ? (() => {
+            const c = document.createElement("canvas");
+            c.width = canvas.width;
+            c.height = Math.max(1, canvas.height - topCrop);
+            const ctx = c.getContext("2d");
+            if (ctx) {
+              ctx.drawImage(
+                canvas,
+                0,
+                topCrop,
+                canvas.width,
+                canvas.height - topCrop,
+                0,
+                0,
+                canvas.width,
+                canvas.height - topCrop
+              );
+            }
+            return c;
+          })()
+        : canvas;
 
     // Create PDF with compression
     const pdf = new jsPDF({
@@ -470,7 +510,7 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
       unit: "mm",
       format: "a4",
       compress: true,
-      precision: 3
+      precision: 3,
     });
 
     const imgData = workingCanvas.toDataURL("image/jpeg", 0.95);
@@ -487,34 +527,40 @@ export async function generateQuotationPDF(quotationId: string): Promise<void> {
     } else {
       const pageHeight = pdfHeight;
       const pagesNeeded = Math.ceil(imgHeight / pageHeight);
-      
+
       for (let i = 0; i < pagesNeeded; i++) {
         if (i > 0) pdf.addPage();
-        
-        const pageCanvas = document.createElement('canvas');
-        const pageCtx = pageCanvas.getContext('2d');
+
+        const pageCanvas = document.createElement("canvas");
+        const pageCtx = pageCanvas.getContext("2d");
         const srcY = (i * pageHeight * workingCanvas.width) / imgWidth;
         const srcHeight = Math.min(
           (pageHeight * workingCanvas.width) / imgWidth,
           workingCanvas.height - srcY
         );
-        
+
         pageCanvas.width = workingCanvas.width;
         pageCanvas.height = srcHeight;
-        
+
         if (pageCtx) {
           pageCtx.imageSmoothingEnabled = true;
-          pageCtx.imageSmoothingQuality = 'high';
-          
+          pageCtx.imageSmoothingQuality = "high";
+
           pageCtx.drawImage(
             workingCanvas,
-            0, srcY, workingCanvas.width, srcHeight,
-            0, 0, workingCanvas.width, srcHeight
+            0,
+            srcY,
+            workingCanvas.width,
+            srcHeight,
+            0,
+            0,
+            workingCanvas.width,
+            srcHeight
           );
-          
+
           const pageImgData = pageCanvas.toDataURL("image/jpeg", 0.95);
           const pageImgHeight = (srcHeight * imgWidth) / workingCanvas.width;
-          
+
           pdf.addImage(pageImgData, "JPEG", 0, 0, imgWidth, pageImgHeight);
         }
       }
@@ -552,7 +598,7 @@ export async function generateReceiptPDF(receiptId: string): Promise<void> {
     document.body.appendChild(tempDiv);
 
     // Wait for fonts and images to load
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // HIGH QUALITY: Better clarity, full width
     const canvas = await html2canvas(tempDiv, {
@@ -567,21 +613,21 @@ export async function generateReceiptPDF(receiptId: string): Promise<void> {
       imageTimeout: 15000,
       foreignObjectRendering: false,
       onclone: (clonedDoc) => {
-        const images = clonedDoc.querySelectorAll('img');
-        images.forEach(img => {
-          img.style.maxWidth = '100%';
-          img.style.height = 'auto';
+        const images = clonedDoc.querySelectorAll("img");
+        images.forEach((img) => {
+          img.style.maxWidth = "100%";
+          img.style.height = "auto";
         });
-        
-        const allElements = clonedDoc.querySelectorAll('*');
-        allElements.forEach(el => {
+
+        const allElements = clonedDoc.querySelectorAll("*");
+        allElements.forEach((el) => {
           if (el instanceof HTMLElement) {
-            (el.style as any).webkitFontSmoothing = 'antialiased';
-            (el.style as any).mozOsxFontSmoothing = 'grayscale';
-            el.style.textRendering = 'optimizeLegibility';
+            (el.style as any).webkitFontSmoothing = "antialiased";
+            (el.style as any).mozOsxFontSmoothing = "grayscale";
+            el.style.textRendering = "optimizeLegibility";
           }
         });
-      }
+      },
     });
 
     // Remove the temporary div
@@ -589,7 +635,7 @@ export async function generateReceiptPDF(receiptId: string): Promise<void> {
 
     // Trim any white space at the top of the canvas to eliminate visible top gap
     const findTopContentY = (sourceCanvas: HTMLCanvasElement): number => {
-      const context = sourceCanvas.getContext('2d');
+      const context = sourceCanvas.getContext("2d");
       if (!context) return 0;
       const { width, height } = sourceCanvas;
       const whiteThreshold = 250; // treat anything close to white as empty
@@ -603,7 +649,10 @@ export async function generateReceiptPDF(receiptId: string): Promise<void> {
           const g = row[i + 1];
           const b = row[i + 2];
           const a = row[i + 3];
-          if (a > 5 && (r < whiteThreshold || g < whiteThreshold || b < whiteThreshold)) {
+          if (
+            a > 5 &&
+            (r < whiteThreshold || g < whiteThreshold || b < whiteThreshold)
+          ) {
             rowEmpty = false;
             break;
           }
@@ -619,20 +668,29 @@ export async function generateReceiptPDF(receiptId: string): Promise<void> {
     const desiredTopMarginPx = Math.round(desiredTopMarginMm / mmPerPx);
     const topCropRaw = findTopContentY(canvas);
     const topCrop = Math.max(0, topCropRaw - desiredTopMarginPx);
-    const workingCanvas = topCrop > 0 ? (() => {
-      const c = document.createElement('canvas');
-      c.width = canvas.width;
-      c.height = Math.max(1, canvas.height - topCrop);
-      const ctx = c.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(
-          canvas,
-          0, topCrop, canvas.width, canvas.height - topCrop,
-          0, 0, canvas.width, canvas.height - topCrop
-        );
-      }
-      return c;
-    })() : canvas;
+    const workingCanvas =
+      topCrop > 0
+        ? (() => {
+            const c = document.createElement("canvas");
+            c.width = canvas.width;
+            c.height = Math.max(1, canvas.height - topCrop);
+            const ctx = c.getContext("2d");
+            if (ctx) {
+              ctx.drawImage(
+                canvas,
+                0,
+                topCrop,
+                canvas.width,
+                canvas.height - topCrop,
+                0,
+                0,
+                canvas.width,
+                canvas.height - topCrop
+              );
+            }
+            return c;
+          })()
+        : canvas;
 
     // Create PDF with compression
     const pdf = new jsPDF({
@@ -640,7 +698,7 @@ export async function generateReceiptPDF(receiptId: string): Promise<void> {
       unit: "mm",
       format: "a4",
       compress: true,
-      precision: 3
+      precision: 3,
     });
 
     const imgData = workingCanvas.toDataURL("image/jpeg", 0.95);
@@ -657,34 +715,40 @@ export async function generateReceiptPDF(receiptId: string): Promise<void> {
     } else {
       const pageHeight = pdfHeight;
       const pagesNeeded = Math.ceil(imgHeight / pageHeight);
-      
+
       for (let i = 0; i < pagesNeeded; i++) {
         if (i > 0) pdf.addPage();
-        
-        const pageCanvas = document.createElement('canvas');
-        const pageCtx = pageCanvas.getContext('2d');
+
+        const pageCanvas = document.createElement("canvas");
+        const pageCtx = pageCanvas.getContext("2d");
         const srcY = (i * pageHeight * workingCanvas.width) / imgWidth;
         const srcHeight = Math.min(
           (pageHeight * workingCanvas.width) / imgWidth,
           workingCanvas.height - srcY
         );
-        
+
         pageCanvas.width = workingCanvas.width;
         pageCanvas.height = srcHeight;
-        
+
         if (pageCtx) {
           pageCtx.imageSmoothingEnabled = true;
-          pageCtx.imageSmoothingQuality = 'high';
-          
+          pageCtx.imageSmoothingQuality = "high";
+
           pageCtx.drawImage(
             workingCanvas,
-            0, srcY, workingCanvas.width, srcHeight,
-            0, 0, workingCanvas.width, srcHeight
+            0,
+            srcY,
+            workingCanvas.width,
+            srcHeight,
+            0,
+            0,
+            workingCanvas.width,
+            srcHeight
           );
-          
+
           const pageImgData = pageCanvas.toDataURL("image/jpeg", 0.95);
           const pageImgHeight = (srcHeight * imgWidth) / workingCanvas.width;
-          
+
           pdf.addImage(pageImgData, "JPEG", 0, 0, imgWidth, pageImgHeight);
         }
       }

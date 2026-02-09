@@ -897,6 +897,16 @@ async function generateInvoicePDFWithBranding(
                     `
                         : ""
                     }
+                    ${
+                      client.mof_number
+                        ? `
+                    <div class="info-row">
+                        <div class="label">MOF Number</div>
+                        <div class="value">${client.mof_number}</div>
+                    </div>
+                    `
+                        : ""
+                    }
                 </div>
             </div>
 

@@ -69,8 +69,13 @@ export async function generateInvoicePDFBuffer(
     }
     if (invoiceData.clientEmail) {
       pdf.text(invoiceData.clientEmail, 20, yPosition);
-      yPosition += 15;
+      yPosition += 6;
     }
+    if (invoiceData.clientMofNumber) {
+      pdf.text(`MOF: ${invoiceData.clientMofNumber}`, 20, yPosition);
+      yPosition += 6;
+    }
+    yPosition += 9;
 
     // Items table
     if (invoiceData.items && invoiceData.items.length > 0) {
@@ -250,6 +255,12 @@ function extractInvoiceDataFromHTML(html: string): any {
   const companyNameMatch = html.match(/class="business-name"[^>]*>([^<]+)/i);
   if (companyNameMatch) {
     data.companyName = companyNameMatch[1].trim();
+  }
+
+  // Extract client MOF number
+  const mofMatch = html.match(/MOF Number<\/div>\s*<div[^>]*>([^<]+)/i);
+  if (mofMatch) {
+    data.clientMofNumber = mofMatch[1].trim();
   }
 
   // Extract items (basic extraction)
